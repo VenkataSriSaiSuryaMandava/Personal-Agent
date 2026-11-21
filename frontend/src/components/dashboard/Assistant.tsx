@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, Send } from "lucide-react";
+import { sendMessage } from "@/lib/api";
 
 const suggestions = [
   "Plan my day",
@@ -12,13 +13,37 @@ const suggestions = [
 
 export default function Assistant() {
   const [message, setMessage] = useState("");
-  const [preview, setPreview] = useState(false);
+  const [response, setResponse] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function submit() {
+    if (!message.trim() || loading) return;
+
+    setLoading(true);
+    setError(false);
+    setResponse("");
+
+    try {
+      const result = await sendMessage(message);
+
+      setResponse(result.message);
+      setMessage("");
+    } catch {
+      setError(true);
+      setResponse(
+        "Unable to complete the request. Check the local backend connection."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <section className="panel assistant-panel">
       <div className="panel-heading">
         <h2>AI Assistant</h2>
-        <span className="muted">Not connected</span>
+        <span className="muted">API preview</span>
       </div>
 
       <div className="assistant-content">
@@ -28,17 +53,16 @@ export default function Assistant() {
 
         <h2>What can I help you with?</h2>
 
-        <p>
-          Your personal AI workspace starts here.
-        </p>
+        <p>Your personal AI workspace starts here.</p>
 
         <div className="suggestion-grid">
           {suggestions.map((suggestion) => (
             <button
               key={suggestion}
+              disabled={loading}
               onClick={() => {
                 setMessage(suggestion);
-                setPreview(false);
+                setResponse("");
               }}
             >
               {suggestion}
@@ -46,10 +70,18 @@ export default function Assistant() {
           ))}
         </div>
 
-        {preview && (
+        {loading && (
           <div role="status" className="notice">
-            AI provider integration is not available yet.
-            Your request has not been transmitted or executed.
+            Processing local request...
+          </div>
+        )}
+
+        {response && (
+          <div
+            role={error ? "alert" : "status"}
+            className={error ? "notice error-notice" : "notice"}
+          >
+            {response}
           </div>
         )}
       </div>
@@ -58,30 +90,31 @@ export default function Assistant() {
         className="chat-input"
         onSubmit={(event) => {
           event.preventDefault();
-          if (message.trim()) setPreview(true);
+          void submit();
         }}
       >
         <input
           aria-label="Assistant request"
           value={message}
+          maxLength={4000}
+          disabled={loading}
           onChange={(event) => {
             setMessage(event.target.value);
-            setPreview(false);
           }}
           placeholder="Ask Aegis anything..."
         />
 
         <button
           type="submit"
-          aria-label="Preview request"
-          disabled={!message.trim()}
+          aria-label="Send request"
+          disabled={!message.trim() || loading}
         >
           <Send size={18} />
         </button>
       </form>
 
       <small className="chat-note">
-        Interface preview. No requests are sent to external services.
+        Local API preview. External AI and execution remain disabled.
       </small>
     </section>
   );
