@@ -465,3 +465,9 @@ input:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+.error-notice {
+  border-color: #ef4444;
+  color: var(--text);
+  background: rgba(239, 68, 68, 0.08);
+}
