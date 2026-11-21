@@ -75,7 +75,7 @@ export default function Home() {
 
               <div className="dashboard-grid">
                 <div className="right-column">
-                  
+
                   <AIInference />
                 </div>
 
@@ -95,7 +95,7 @@ export default function Home() {
               </div>
 
               <div className="right-column">
-                  
+
                   <AIInference />
                 </div>
             </>
