@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Callable
 
 from aegis.models.base import ModelProvider
 from aegis.policy import (
@@ -37,9 +38,11 @@ class OutboundGateway:
         self,
         provider: ModelProvider,
         context: GatewayContext,
+        before_request: Callable[[], None] | None = None,
     ):
         self._provider = provider
         self._context = context
+        self._before_request = before_request
 
     def complete(self, prompt_id: PromptId) -> str:
 
@@ -72,6 +75,9 @@ class OutboundGateway:
 
         if decision.decision is not Decision.ALLOW:
             raise GatewayDenied(decision.reason)
+
+        if self._before_request is not None:
+            self._before_request()
 
         try:
             response = self._provider.complete(prompt.text)

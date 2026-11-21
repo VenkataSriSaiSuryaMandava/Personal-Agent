@@ -1,14 +1,24 @@
 import argparse
 import os
 
-from aegis.models.gemini import GeminiProvider
+from aegis.schemas.inference import InferenceRequest
+
+from aegis.security.prompts import PromptId
+
 from aegis.security.gateway import (
-    GatewayContext,
     GatewayDenied,
-    OutboundGateway,
     ProviderUnavailable,
 )
-from aegis.security.prompts import PromptId
+
+from aegis.security.rate_limit import (
+    RateLimitExceeded,
+    UsageStorageUnavailable,
+)
+
+from aegis.services.inference import (
+    ALLOWED_MODEL,
+    run_inference,
+)
 
 
 def main():
@@ -25,7 +35,8 @@ def main():
 
     parser.add_argument(
         "--model",
-        required=True,
+        default=ALLOWED_MODEL,
+        choices=[ALLOWED_MODEL],
     )
 
     parser.add_argument(
@@ -43,49 +54,43 @@ def main():
         print("Explicit approval is required.")
         return 1
 
-    key = os.getenv("GEMINI_API_KEY", "")
-
-    if not key.strip():
-        print("Gemini API key is not configured.")
-        return 1
-
     try:
-        provider = GeminiProvider(
-            api_key=key,
-            model=args.model,
-        )
 
-        gateway = OutboundGateway(
-            provider,
-            GatewayContext(
-                cloud_enabled=True,
-                scoped_grant=True,
-                emergency_stop=(
-                    os.getenv("AEGIS_EMERGENCY_STOP") == "1"
-                ),
+        result = run_inference(
+            InferenceRequest(
+                prompt_id=PromptId(args.prompt),
+                approved=True,
             ),
+            requested_model=args.model,
         )
 
-        result = gateway.complete(
-            PromptId(args.prompt)
-        )
-
-        # Escape control characters before terminal display.
         safe_output = "".join(
-            char if char.isprintable() or char == "\n"
+            char
+            if char.isprintable() or char == "\n"
             else repr(char)[1:-1]
-            for char in result
+            for char in result.message
         )
 
         print(safe_output)
 
         return 0
 
+    except RateLimitExceeded:
+
+        print("Inference usage limit reached.")
+        return 1
+
+    except UsageStorageUnavailable:
+
+        print("Secure usage storage unavailable.")
+        return 1
+
     except (
         GatewayDenied,
         ProviderUnavailable,
         ValueError,
     ):
+
         print("Inference blocked or unavailable.")
         return 1
 
