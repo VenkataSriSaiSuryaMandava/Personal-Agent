@@ -1,0 +1,9 @@
+# Architecture decision record: local-first modular monolith
+
+- Private runtime: FastAPI, SQLite, local dashboard and CLI; bind to loopback. Introduce authenticated endpoints, CSRF/origin protection and an OS-level tool boundary before enabling real actions.
+- Public demo: separate Next.js deployment; curated synthetic prompts with a restricted server-side model adapter, no local tools and no arbitrary user content sent to a shared free-tier API. Separate credentials and deploy configuration. No production data or network link to the local runtime.
+- Model routing: free-provider adapters, no automatic paid fallback. Unknown, personal and sensitive information cannot be sent to cloud AI. Classify by trusted provenance and conservatively block mixed inputs. Local analysis may use deterministic code or optional small offline model.
+- Permissions: deny by default, explicit scoped grants, per-occurrence approval for recurring tasks, separate authorization for every personal disclosure, approval bound to action parameters and destination, fresh authentication for high risk. Never accept grants or classifications from the LLM. Manual login whenever needed. Agent cannot change permissions.
+- Execution: future persistent task queue with interrupted/uncertain states, reconciliation before retries, and startup recovery. No execution while laptop is off. Emergency stop blocks new activity; completed external effects cannot be undone.
+- Storage: use application support directory outside repository with restrictive access, FileVault where available, Keychain for keys, redacted logs, local backup review. Encryption/authentication implementation is deferred until before personal data is enabled.
+- Roadmap: foundation -> dashboard/CLI -> model adapter and outbound gateway -> permission and authentication enforcement -> local persistence -> research/jobs -> email/calendar -> browser/coding tools -> deploy isolated demo.

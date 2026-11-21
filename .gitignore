@@ -1,0 +1,77 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.db
+*.db-*
+*.sqlite*
+private-data/
+credentials/
+sessions/
+logs/
+backups/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.next/
+.DS_Store
+
+# Python artifacts
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Frontend artifacts
+node_modules/
+.next/
+out/
+.vercel/
+coverage/
+*.tsbuildinfo
+
+# Credentials and environment variables
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.token
+credentials.json
+client_secret*.json
+token.json
+
+# Private runtime data
+data/
+memory/
+private/
+private-data/
+secrets/
+local-storage/
+sessions/
+backups/
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Browser automation
+browser-profiles/
+playwright-report/
+test-results/
+
+# Operating system and IDE
+.DS_Store
+.vscode/
+.idea/
