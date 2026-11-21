@@ -29,6 +29,9 @@ def run_inference(
         "gemini-3.1-flash-lite",
     )
 
+    if model != "gemini-3.1-flash-lite":
+        raise GatewayDenied("Model is not authorized")
+
     if not key.strip():
         raise ProviderUnavailable(
             "AI provider is not configured"

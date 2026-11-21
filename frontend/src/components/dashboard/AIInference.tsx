@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import styles from "./AIInference.module.css";
 import { Sparkles, ShieldCheck } from "lucide-react";
 
 const prompts = [
@@ -92,9 +94,9 @@ export default function AIInference() {
   }
 
   return (
-    <section className="panel inference-panel">
+    <section className={`panel ${styles.panel}`}>
       <div className="panel-heading">
-        <h2>AI Intelligence</h2>
+        <h2>AI Assistant</h2>
         <Sparkles size={20} />
       </div>
 
@@ -124,12 +126,12 @@ export default function AIInference() {
         ))}
       </select>
 
-      <div className="prompt-preview">
+      <div className={styles.prompt}>
         <strong>Exact text sent to Gemini</strong>
         <p>{current?.text}</p>
       </div>
 
-      <label className="approval-checkbox">
+      <label className={styles.approval}>
         <input
           type="checkbox"
           checked={approved}
@@ -146,7 +148,7 @@ export default function AIInference() {
       </label>
 
       <button
-        className="inference-button"
+        className={styles.generate}
         onClick={() => void generate()}
         disabled={!approved || loading}
       >
@@ -161,14 +163,20 @@ export default function AIInference() {
       )}
 
       {answer && (
-        <div role="status" className="model-response">
+        <div role="status" className={styles.response}>
           <div className="panel-heading">
             <strong>Gemini response</strong>
             <span className="muted">{model}</span>
           </div>
 
-          <div className="response-text">
-            {answer}
+          <div className={styles.markdown}>
+            <ReactMarkdown
+              skipHtml
+              disallowedElements={["a", "img"]}
+              unwrapDisallowed
+            >
+              {answer}
+            </ReactMarkdown>
           </div>
         </div>
       )}

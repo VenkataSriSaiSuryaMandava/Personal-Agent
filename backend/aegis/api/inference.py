@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+from aegis.security.access import require_gateway, limiter
 
 from aegis.schemas.inference import (
     InferenceRequest,
@@ -38,6 +39,9 @@ def inference(
             status_code=415,
             detail="JSON request required",
         )
+
+    require_gateway(request)
+    limiter.acquire()
 
     try:
         return run_inference(payload)
