@@ -40,7 +40,7 @@ export function rejectRequest(request: Request) {
 }
 
 export async function callBackend(
-  endpoint: "/api/v1/status" | "/api/v1/chat",
+  endpoint: "/api/v1/status" | "/api/v1/chat" | "/api/v1/inference",
   init: RequestInit = {}
 ) {
   try {
@@ -50,7 +50,9 @@ export async function callBackend(
         ...init,
         cache: "no-store",
         redirect: "error",
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(
+          endpoint === "/api/v1/inference" ? 30000 : 5000
+        ),
       }
     );
 

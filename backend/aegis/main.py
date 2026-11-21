@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from aegis.api import chat, health
+from aegis.api import chat, health, inference
 from aegis.config import settings
 
 
@@ -39,3 +39,5 @@ async def validation_error(
 
 app.include_router(health.router)
 app.include_router(chat.router)
+
+app.include_router(inference.router)
