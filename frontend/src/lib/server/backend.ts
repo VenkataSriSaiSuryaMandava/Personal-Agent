@@ -40,17 +40,35 @@ export function rejectRequest(request: Request) {
 }
 
 export async function callBackend(
-  endpoint: "/api/v1/status" | "/api/v1/chat",
+  endpoint: "/api/v1/status" | "/api/v1/chat" | "/api/v1/inference",
   init: RequestInit = {}
 ) {
+  const headers = new Headers(init.headers);
+
+  if (endpoint === "/api/v1/inference") {
+    const token = process.env.AEGIS_GATEWAY_TOKEN;
+
+    if (!token || token.length < 64) {
+      return NextResponse.json(
+        { detail: "Gateway not configured" },
+        { status: 503 }
+      );
+    }
+
+    headers.set("x-aegis-gateway-token", token);
+  }
+
   try {
     const response = await fetch(
       `${BACKEND_URL}${endpoint}`,
       {
         ...init,
+        headers,
         cache: "no-store",
         redirect: "error",
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(
+          endpoint === "/api/v1/inference" ? 30000 : 5000
+        ),
       }
     );
 

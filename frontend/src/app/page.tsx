@@ -4,7 +4,7 @@ import { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import StatusCard from "@/components/dashboard/StatusCard";
-import Assistant from "@/components/dashboard/Assistant";
+import AIInference from "@/components/dashboard/AIInference";
 import SystemStatus from "@/components/dashboard/SystemStatus";
 import Approvals from "@/components/dashboard/Approvals";
 import { navigation, type Workspace } from "@/lib/navigation";
@@ -68,13 +68,16 @@ export default function Home() {
 
                 <StatusCard
                   title="AI provider"
-                  value="Offline"
-                  description="Configuration required"
+                  value="Gemini"
+                  description="See live system status"
                 />
               </div>
 
               <div className="dashboard-grid">
-                <Assistant />
+                <div className="right-column">
+
+                  <AIInference />
+                </div>
 
                 <div className="right-column">
                   <SystemStatus />
@@ -91,7 +94,10 @@ export default function Home() {
                 <p>Interact with your personal agent.</p>
               </div>
 
-              <Assistant />
+              <div className="right-column">
+
+                  <AIInference />
+                </div>
             </>
           ) : (
             <>
