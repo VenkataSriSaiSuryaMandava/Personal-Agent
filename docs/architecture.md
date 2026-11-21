@@ -7,3 +7,20 @@
 - Execution: future persistent task queue with interrupted/uncertain states, reconciliation before retries, and startup recovery. No execution while laptop is off. Emergency stop blocks new activity; completed external effects cannot be undone.
 - Storage: use application support directory outside repository with restrictive access, FileVault where available, Keychain for keys, redacted logs, local backup review. Encryption/authentication implementation is deferred until before personal data is enabled.
 - Roadmap: foundation -> dashboard/CLI -> model adapter and outbound gateway -> permission and authentication enforcement -> local persistence -> research/jobs -> email/calendar -> browser/coding tools -> deploy isolated demo.
+
+## Outbound AI security boundary
+
+- Model providers implement a shared completion interface.
+- Outbound inference must pass through the security gateway.
+- Cloud inference and permissions are denied by default.
+- The initial gateway accepts only trusted prompt identifiers.
+- Prompt classification is assigned by trusted application code.
+- Arbitrary personal text is not eligible for cloud inference.
+- Synthetic-only restrictions apply to the public demonstration.
+- Provider exceptions must not reveal credentials or private input.
+- Provider responses are untrusted and cannot execute actions.
+- Gateway tests verify that denied requests never invoke a provider.
+
+The current gateway is a foundational application-level control.
+Authentication, live permission storage, operating-system network
+enforcement and runtime emergency shutdown remain future work.
