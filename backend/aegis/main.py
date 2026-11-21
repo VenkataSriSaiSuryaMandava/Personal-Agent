@@ -1,8 +1,41 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-app = FastAPI(title="Aegis AI", version="0.1.0", docs_url=None, redoc_url=None)
+from aegis.api import chat, health
+from aegis.config import settings
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "version": "0.1.0", "stage": "foundation"}
+app = FastAPI(
+    title=settings.name,
+    version=settings.version,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=[
+        "127.0.0.1",
+        "localhost",
+        "testserver",
+    ],
+)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(
+    request: Request,
+    exc: RequestValidationError,
+):
+    # Avoid echoing potentially private input in errors.
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "Invalid request"},
+    )
+
+
+app.include_router(health.router)
+app.include_router(chat.router)
