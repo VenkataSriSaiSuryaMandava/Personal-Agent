@@ -4,6 +4,7 @@ from typing import Callable
 from aegis.models.base import ModelProvider
 from aegis.policy import (
     Action,
+    DataClass,
     Decision,
     Request,
     evaluate,
@@ -76,11 +77,28 @@ class OutboundGateway:
         if decision.decision is not Decision.ALLOW:
             raise GatewayDenied(decision.reason)
 
+        return self._complete_prompt(prompt.text)
+
+    def complete_reviewed(self, prompt: str, classification: DataClass) -> str:
+        """Only the owner-reviewed conversation service may call this entry point."""
+        if not self._context.cloud_enabled or self._context.demo_mode:
+            raise GatewayDenied("Reviewed conversation unavailable")
+        decision = evaluate(Request(
+            action=Action.CLOUD_INFERENCE,
+            data=classification,
+            scoped_grant=self._context.scoped_grant,
+            stopped=self._context.emergency_stop,
+        ))
+        if decision.decision is not Decision.ALLOW:
+            raise GatewayDenied(decision.reason)
+        return self._complete_prompt(prompt)
+
+    def _complete_prompt(self, prompt: str) -> str:
         if self._before_request is not None:
             self._before_request()
 
         try:
-            response = self._provider.complete(prompt.text)
+            response = self._provider.complete(prompt)
         except Exception:
             # Do not expose raw provider errors, keys or prompts.
             raise ProviderUnavailable(
