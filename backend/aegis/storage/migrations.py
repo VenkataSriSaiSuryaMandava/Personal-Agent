@@ -6,7 +6,7 @@ from aegis.storage.database import (
 )
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def initialize_database(
@@ -57,4 +57,64 @@ def initialize_database(
 
             connection.execute(
                 "PRAGMA user_version = 1"
+            )
+
+
+            version = 1
+
+        if version == 1:
+
+            connection.execute("""
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    is_active INTEGER NOT NULL DEFAULT 1
+                        CHECK (is_active IN (0, 1))
+                )
+            """)
+
+            connection.execute("""
+                CREATE TABLE auth_sessions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    token_hash TEXT NOT NULL UNIQUE,
+                    created_at INTEGER NOT NULL,
+                    expires_at INTEGER NOT NULL,
+                    last_seen_at INTEGER NOT NULL,
+                    revoked_at INTEGER,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE,
+                    CHECK (expires_at > created_at)
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_auth_sessions_user
+                ON auth_sessions(user_id)
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_auth_sessions_expiry
+                ON auth_sessions(expires_at)
+            """)
+
+            connection.execute("""
+                CREATE TABLE login_attempts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    attempted_at INTEGER NOT NULL,
+                    successful INTEGER NOT NULL
+                        CHECK (successful IN (0, 1))
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_login_attempts_time
+                ON login_attempts(attempted_at)
+            """)
+
+            connection.execute(
+                "PRAGMA user_version = 2"
             )
