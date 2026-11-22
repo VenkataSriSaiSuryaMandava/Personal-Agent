@@ -1,0 +1,457 @@
+.aegis-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+  padding: 24px;
+}
+
+.aegis-header,
+.aegis-identity,
+.aegis-toolbar,
+.aegis-taskTop,
+.aegis-conversationHeader,
+.aegis-agentHeading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aegis-header,
+.aegis-toolbar,
+.aegis-taskTop,
+.aegis-conversationHeader {
+  justify-content: space-between;
+}
+
+.aegis-header {
+  flex-wrap: wrap;
+}
+
+.aegis-identity {
+  min-width: 0;
+}
+
+.aegis-identity h2 {
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.aegis-identity p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.aegis-logo {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #2563eb;
+  color: white;
+}
+
+.aegis-security {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.aegis-security svg {
+  color: #22c55e;
+}
+
+.aegis-section h3 {
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.aegis-taskGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.aegis-task {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--bg);
+  color: var(--text);
+  text-align: left;
+  transition: border-color 150ms, background 150ms;
+}
+
+.aegis-task:hover:not(:disabled) {
+  border-color: #22c55e;
+}
+
+.aegis-taskTop {
+  width: 100%;
+  color: var(--accent);
+}
+
+.aegis-task strong {
+  font-size: 13px;
+}
+
+.aegis-task span {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.aegis-selected {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.aegis-selected .aegis-taskTop {
+  color: #22c55e;
+}
+
+.aegis-conversation {
+  min-width: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.aegis-conversationHeader {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.aegis-conversationHeader > div,
+.aegis-clear {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aegis-clear {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.aegis-clear:hover {
+  color: #ef4444;
+}
+
+.aegis-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  min-height: 200px;
+  padding: 24px;
+}
+
+.aegis-empty svg {
+  color: var(--accent);
+}
+
+.aegis-empty h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.aegis-empty p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.aegis-messages {
+  max-height: 560px;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.aegis-exchange {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.aegis-exchange:last-child {
+  border-bottom: 0;
+}
+
+.aegis-userMessage {
+  align-self: flex-end;
+  max-width: 88%;
+  padding: 14px;
+  border-radius: 12px 12px 3px 12px;
+  background: var(--hover);
+  overflow-wrap: anywhere;
+}
+
+.aegis-userMessage span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.aegis-userMessage p {
+  margin-top: 5px;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.aegis-agentMessage {
+  min-width: 0;
+}
+
+.aegis-agentHeading {
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.aegis-agentHeading svg {
+  color: var(--accent);
+}
+
+.aegis-agentHeading small {
+  color: var(--muted);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.aegis-markdown {
+  font-size: 14px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.aegis-markdown p {
+  margin: 12px 0;
+}
+
+.aegis-markdown h1,
+.aegis-markdown h2,
+.aegis-markdown h3,
+.aegis-markdown h4 {
+  font-size: 17px;
+  font-weight: 650;
+  margin: 20px 0 10px;
+}
+
+.aegis-markdown ul,
+.aegis-markdown ol {
+  padding-left: 23px;
+  margin: 12px 0;
+}
+
+.aegis-markdown ul {
+  list-style: disc;
+}
+
+.aegis-markdown ol {
+  list-style: decimal;
+}
+
+.aegis-markdown li {
+  margin: 5px 0;
+}
+
+.aegis-markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--hover);
+}
+
+.aegis-markdown code {
+  font-family: monospace;
+  font-size: 13px;
+  background: var(--hover);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.aegis-markdown hr {
+  margin: 20px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.aegis-composer {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--bg);
+  padding: 12px;
+}
+
+.aegis-composer:focus-within {
+  border-color: #22c55e;
+}
+
+.aegis-composer textarea {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  min-height: 95px;
+  max-height: 240px;
+  border: 0;
+  padding: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aegis-composer textarea:focus {
+  outline: none;
+}
+
+.aegis-composer textarea::placeholder {
+  color: var(--muted);
+}
+
+.aegis-approval {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: rgba(34, 197, 94, 0.07);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.aegis-approval input {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: #16a34a;
+}
+
+.aegis-toolbar {
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.aegis-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.aegis-generate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #15803d;
+  color: white;
+  border: 1px solid #16a34a;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: background 150ms;
+}
+
+.aegis-generate:hover:not(:disabled) {
+  background: #166534;
+}
+
+.aegis-generate:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.aegis-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.aegis-loading svg,
+.aegis-generate[aria-busy="true"] svg {
+  animation: aegis-spin 1s linear infinite;
+}
+
+.aegis-error {
+  padding: 12px;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.aegis-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+@keyframes aegis-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .aegis-taskGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .aegis-panel {
+    padding: 14px;
+    gap: 16px;
+  }
+
+  .aegis-generate {
+    width: 100%;
+  }
+
+  .aegis-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .aegis-exchange {
+    padding: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aegis-loading svg,
+  .aegis-generate[aria-busy="true"] svg {
+    animation: none;
+  }
+}
