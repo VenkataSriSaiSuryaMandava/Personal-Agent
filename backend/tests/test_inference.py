@@ -15,10 +15,26 @@ client = TestClient(
 )
 
 
+VALID_REQUEST = {
+    "prompt_id": "general_knowledge",
+    "approved": True,
+}
+
+
 @pytest.fixture(autouse=True)
-def gateway_environment(monkeypatch):
+def gateway_environment(monkeypatch, tmp_path):
 
     from aegis.security.access import limiter
+    from aegis.storage.migrations import initialize_database
+
+    directory = tmp_path / "private"
+    directory.mkdir(mode=0o700)
+
+    path = directory / "usage.sqlite3"
+
+    initialize_database(path)
+
+    monkeypatch.setattr(limiter, "path", path)
 
     monkeypatch.setenv(
         "AEGIS_GATEWAY_TOKEN", TEST_GATEWAY
@@ -27,17 +43,6 @@ def gateway_environment(monkeypatch):
     monkeypatch.setenv(
         "GEMINI_MODEL", "gemini-3.1-flash-lite"
     )
-
-    limiter._requests.clear()
-
-    yield
-
-    limiter._requests.clear()
-
-VALID_REQUEST = {
-    "prompt_id": "general_knowledge",
-    "approved": True,
-}
 
 
 def test_inference_disabled(monkeypatch):
@@ -164,20 +169,28 @@ def test_wrong_gateway_credential():
     assert response.status_code == 403
 
 
-def test_rate_limit():
+def test_rate_limit(tmp_path):
 
-    from aegis.security.access import InferenceLimiter
-    from fastapi import HTTPException
+    from aegis.security.rate_limit import (
+        PersistentRateLimiter,
+        RateLimitExceeded,
+    )
+    from aegis.storage.migrations import initialize_database
 
-    limiter = InferenceLimiter()
+    directory = tmp_path / "limiter"
+    directory.mkdir(mode=0o700)
+
+    path = directory / "usage.sqlite3"
+
+    initialize_database(path)
+
+    limiter = PersistentRateLimiter(path)
 
     for _ in range(3):
         limiter.acquire()
 
-    with pytest.raises(HTTPException) as error:
+    with pytest.raises(RateLimitExceeded):
         limiter.acquire()
-
-    assert error.value.status_code == 429
 
 
 def test_unapproved_model(monkeypatch):

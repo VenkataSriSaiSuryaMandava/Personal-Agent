@@ -1,14 +1,22 @@
 from fastapi import APIRouter, HTTPException, Request
-from aegis.security.access import require_gateway, limiter
+
+from aegis.security.access import require_gateway
+
+from aegis.security.rate_limit import (
+    RateLimitExceeded,
+    UsageStorageUnavailable,
+)
 
 from aegis.schemas.inference import (
     InferenceRequest,
     InferenceResponse,
 )
+
 from aegis.security.gateway import (
     GatewayDenied,
     ProviderUnavailable,
 )
+
 from aegis.services.inference import run_inference
 
 
@@ -25,6 +33,7 @@ def inference(
 ) -> InferenceResponse:
 
     if request.headers.get("origin") is not None:
+
         raise HTTPException(
             status_code=403,
             detail="Direct browser access is disabled",
@@ -35,24 +44,41 @@ def inference(
     ).split(";")[0].strip().lower()
 
     if content_type != "application/json":
+
         raise HTTPException(
             status_code=415,
             detail="JSON request required",
         )
 
     require_gateway(request)
-    limiter.acquire()
 
     try:
+
         return run_inference(payload)
 
+    except RateLimitExceeded:
+
+        raise HTTPException(
+            status_code=429,
+            detail="Inference usage limit reached",
+        ) from None
+
+    except UsageStorageUnavailable:
+
+        raise HTTPException(
+            status_code=503,
+            detail="Secure usage storage unavailable",
+        ) from None
+
     except GatewayDenied:
+
         raise HTTPException(
             status_code=403,
             detail="Inference denied by security policy",
         ) from None
 
     except ProviderUnavailable:
+
         raise HTTPException(
             status_code=503,
             detail="AI provider unavailable",
