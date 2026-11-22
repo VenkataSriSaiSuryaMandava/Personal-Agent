@@ -725,3 +725,23 @@ input:focus-visible {
   border-radius: 7px;
   padding: 8px 12px;
 }
+
+/* Chat-first shell; preserve the existing light/dark theme variables. */
+.ac-shell { min-height:calc(100dvh - 52px); }
+.ac-shell .sidebar { height:calc(100dvh - 52px); }
+.ac-shell[data-sidebar="collapsed"] .sidebar { width:66px; padding-inline:8px; }
+.ac-shell[data-sidebar="collapsed"] .brand { padding-inline:0; }
+.ac-shell[data-sidebar="collapsed"] .brand > div:last-child,
+.ac-shell[data-sidebar="collapsed"] .nav-item span,
+.ac-shell[data-sidebar="collapsed"] .nav-heading,
+.ac-shell[data-sidebar="collapsed"] .sidebar-footer { display:none; }
+.ac-shell[data-sidebar="collapsed"] .nav-item { justify-content:center; }
+.ac-topbar-wrap { display:flex; align-items:center; background:var(--bg); padding-left:16px; border-bottom:1px solid var(--border); }
+.ac-topbar-wrap .topbar { flex:1; min-width:0; position:static; border-bottom:0; padding-left:14px; }
+.ac-sidebar-toggle { display:grid; place-items:center; flex-shrink:0; }
+.ac-workspace { padding-top:22px; }
+.ac-overview-card { display:grid; gap:12px; justify-items:start; }
+.ac-overview-card h2 { font-size:21px; font-weight:650; }
+.ac-overview-card p { font-size:14px; color:var(--muted); }
+.ac-overview-card svg { color:var(--accent); }
+@media(max-width:700px) { .ac-shell[data-sidebar="expanded"] .sidebar { width:65px; } .ac-shell[data-sidebar="collapsed"] .sidebar { display:none; } .ac-topbar-wrap { padding-left:8px; } .ac-workspace { padding:10px; } }

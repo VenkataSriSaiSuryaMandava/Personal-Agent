@@ -22,7 +22,7 @@ export default function Header({
       <div className="header-actions">
         <span className="mode-label">
           <Shield size={14} />
-          Preview mode
+          Owner workspace
         </span>
 
         <button

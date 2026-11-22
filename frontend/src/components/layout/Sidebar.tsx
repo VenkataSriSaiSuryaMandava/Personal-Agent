@@ -33,6 +33,8 @@ export default function Sidebar({
           return (
             <button
               key={item.id}
+              aria-label={item.label}
+              title={item.label}
               onClick={() => onNavigate(item.id)}
               aria-current={active === item.id ? "page" : undefined}
               className={`nav-item ${
