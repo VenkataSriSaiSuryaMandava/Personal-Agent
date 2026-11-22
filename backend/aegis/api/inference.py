@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 
-from aegis.security.access import require_gateway
+from aegis.api.auth import require_owner
 
 from aegis.security.rate_limit import (
     RateLimitExceeded,
@@ -26,6 +26,7 @@ router = APIRouter(prefix="/api/v1")
 @router.post(
     "/inference",
     response_model=InferenceResponse,
+    dependencies=[Depends(require_owner)],
 )
 def inference(
     payload: InferenceRequest,
@@ -50,7 +51,6 @@ def inference(
             detail="JSON request required",
         )
 
-    require_gateway(request)
 
     try:
 
