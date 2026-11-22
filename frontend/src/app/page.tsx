@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import AuthGate from "@/components/auth/AuthGate";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import StatusCard from "@/components/dashboard/StatusCard";
@@ -10,6 +11,10 @@ import Approvals from "@/components/dashboard/Approvals";
 import { navigation, type Workspace } from "@/lib/navigation";
 
 export default function Home() {
+  return <AuthGate><Dashboard /></AuthGate>;
+}
+
+function Dashboard() {
   const [active, setActive] = useState<Workspace>("overview");
   const [dark, setDark] = useState(true);
 
