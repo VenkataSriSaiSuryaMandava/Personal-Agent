@@ -745,3 +745,39 @@ input:focus-visible {
 .ac-overview-card p { font-size:14px; color:var(--muted); }
 .ac-overview-card svg { color:var(--accent); }
 @media(max-width:700px) { .ac-shell[data-sidebar="expanded"] .sidebar { width:65px; } .ac-shell[data-sidebar="collapsed"] .sidebar { display:none; } .ac-topbar-wrap { padding-left:8px; } .ac-workspace { padding:10px; } }
+
+/* Dedicated overview launch panel */
+.ac-overview-card {
+  padding: 30px;
+  min-height: 240px;
+  align-content: center;
+  background: linear-gradient(
+    135deg,
+    var(--panel),
+    var(--hover)
+  );
+  border-radius: 18px;
+}
+
+.ac-overview-card h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -0.8px;
+}
+
+.ac-overview-card p {
+  max-width: 540px;
+  line-height: 1.75;
+}
+
+.ac-overview-card button {
+  background: #2563eb;
+  color: white;
+  border: 0;
+  padding: 12px 24px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.ac-overview-card button:hover {
+  background: #1d4ed8;
+}

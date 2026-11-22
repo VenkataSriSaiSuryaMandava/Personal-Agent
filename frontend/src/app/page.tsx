@@ -7,7 +7,6 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import StatusCard from "@/components/dashboard/StatusCard";
 import Conversation from "@/components/dashboard/Conversation";
-import AIInference from "@/components/dashboard/AIInference";
 import SystemStatus from "@/components/dashboard/SystemStatus";
 import Approvals from "@/components/dashboard/Approvals";
 import { navigation, type Workspace } from "@/lib/navigation";
@@ -17,7 +16,7 @@ export default function Home() {
 }
 
 function Dashboard() {
-  const [active, setActive] = useState<Workspace>("chat");
+  const [active, setActive] = useState<Workspace>("overview");
   const [dark, setDark] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const current = navigation.find(item => item.id === active)!;
@@ -34,14 +33,14 @@ function Dashboard() {
         {active === "overview" && <>
           <div className="page-heading"><div className="eyebrow">SYSTEM OVERVIEW</div><h1>Your command center.</h1><p>View service status, security controls and available features.</p></div>
           <div className="stats-grid">
-            <StatusCard title="AI provider" value="Gemini" description="Reviewed cloud conversation"/>
+            <StatusCard title="AI provider" value="Gemini" description="Gemini conversational AI"/>
             <StatusCard title="Task engine" value="Off" description="Not implemented yet"/>
             <StatusCard title="File access" value="Off" description="Not connected"/>
             <StatusCard title="Execution" value="Off" description="Text responses only"/>
           </div>
           <div className="dashboard-grid"><div className="right-column">
-            <section className="panel ac-overview-card"><MessageSquare size={26}/><h2>Start a conversation</h2><p>Ask questions, compare ideas and generate code with the AI assistant.</p><button className="secondary-button" onClick={() => setActive("chat")}>Open assistant</button></section>
-            <details className="panel"><summary>Trusted prompt demonstrations</summary><AIInference /></details>
+            <section className="panel ac-overview-card"><MessageSquare size={26}/><h2>Start a conversation</h2><p>Ask questions, compare ideas and generate code with the AI assistant.</p><button className="secondary-button" onClick={() => setActive("chat")}>Ask Aegis →</button></section>
+
           </div><div className="right-column"><SystemStatus/><Approvals onOpen={() => setActive("approvals")}/></div></div>
         </>}
         {active !== "chat" && active !== "overview" && <>

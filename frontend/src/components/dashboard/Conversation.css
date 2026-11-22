@@ -45,3 +45,45 @@
 .ac-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:10px 0 0; }.ac-toolbar span,.ac-footer { color:var(--muted); font-size:11px; }.ac-send { background:#2563eb; color:white; padding:9px 16px; border-radius:9px; font-size:13px; font-weight:600; }.ac-send:hover:not(:disabled) { background:#1d4ed8; }.ac-send:disabled { opacity:.45; }.ac-error { margin:10px 0; padding:10px; border:1px solid #dc2626; border-radius:8px; font-size:13px; }.ac-footer { text-align:center; padding:12px 18px; line-height:1.5; }.ac-loading svg,.ac-send[disabled] svg.lucide-loader-circle { animation:ac-spin 1s linear infinite; }@keyframes ac-spin { to { transform:rotate(360deg); } }
 @media(max-width:700px) { .ac-panel { border-radius:12px; }.ac-header { padding:12px; flex-wrap:wrap; }.ac-brand p { font-size:10px; }.ac-suggestions { grid-template-columns:1fr; }.ac-scroll { padding:14px 10px; }.ac-user { max-width:96%; }.ac-markdown { font-size:14px; }.ac-composer { width:calc(100% - 16px); }.ac-welcome { padding-top:12px; } }
 @media(prefers-reduced-motion:reduce) { .ac-loading svg,.ac-send svg { animation:none; } }
+
+/* Compact conversation privacy controls. */
+.ac-privacy-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 3px 12px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.ac-privacy-bar label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.ac-privacy-bar input {
+  accent-color: #2563eb;
+}
+
+.ac-markdown {
+  line-height: 1.85;
+}
+
+.ac-markdown pre {
+  overflow-x: auto;
+}
+
+.ac-markdown table {
+  min-width: 100%;
+}
+
+@media (max-width: 700px) {
+  .ac-privacy-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
