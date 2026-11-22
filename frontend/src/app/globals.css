@@ -583,3 +583,145 @@ input:focus-visible {
     padding: 14px;
   }
 }
+
+
+.aegis-auth-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      #182d48,
+      transparent 60%
+    ),
+    #090e17;
+  color: #e8eef8;
+}
+
+.aegis-auth-card {
+  width: 100%;
+  max-width: 430px;
+  padding: 38px;
+  border: 1px solid #29374a;
+  border-radius: 20px;
+  background: #111a28;
+  box-shadow: 0 24px 70px #0005;
+}
+
+.aegis-auth-icon {
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 24px;
+  border-radius: 18px;
+  color: #67e8f9;
+  background: #18364b;
+  border: 1px solid #28506b;
+}
+
+.aegis-auth-eyebrow {
+  color: #67e8f9;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-align: center;
+}
+
+.aegis-auth-card h1 {
+  font-size: 34px;
+  font-weight: 700;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.aegis-auth-card p {
+  color: #94a3b8;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.aegis-auth-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.aegis-auth-card label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.aegis-auth-card input {
+  width: 100%;
+  background: #0a111d;
+  border: 1px solid #344256;
+  border-radius: 9px;
+  padding: 13px;
+  color: #e8eef8;
+  margin-bottom: 9px;
+}
+
+.aegis-auth-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 9px;
+  background: #16a34a;
+  color: white;
+  font-weight: 600;
+  padding: 14px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.aegis-auth-footer {
+  text-align: center;
+  border-top: 1px solid #29374a;
+  margin-top: 26px;
+  padding-top: 20px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.aegis-auth-error {
+  padding: 12px;
+  color: #fecaca;
+  background: #7f1d1d40;
+  border: 1px solid #991b1b;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.aegis-auth-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 10px 20px;
+  background: #111a28;
+  border-bottom: 1px solid #29374a;
+  color: #86efac;
+  font-size: 12px;
+}
+
+.aegis-auth-bar span,
+.aegis-auth-bar button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.aegis-auth-bar button {
+  background: #263244;
+  color: #e8eef8;
+  border: 1px solid #344256;
+  border-radius: 7px;
+  padding: 8px 12px;
+}
