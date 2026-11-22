@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from aegis.api import auth
+from aegis.api import auth, conversation
 from aegis.api import chat, health, inference
 from aegis.config import settings
 
@@ -44,3 +44,5 @@ app.include_router(chat.router)
 app.include_router(inference.router)
 
 app.include_router(auth.router)
+
+app.include_router(conversation.router)

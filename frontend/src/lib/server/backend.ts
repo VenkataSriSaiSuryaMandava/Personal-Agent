@@ -40,7 +40,7 @@ export function rejectRequest(request: Request) {
 }
 
 export async function callBackend(
-  endpoint: "/api/v1/status" | "/api/v1/chat" | "/api/v1/inference",
+  endpoint: "/api/v1/status" | "/api/v1/chat" | "/api/v1/inference" | "/api/v1/conversation",
   init: RequestInit = {},
   session?: string
 ) {
@@ -72,7 +72,7 @@ export async function callBackend(
         cache: "no-store",
         redirect: "error",
         signal: AbortSignal.timeout(
-          endpoint === "/api/v1/inference" ? 30000 : 5000
+          (endpoint === "/api/v1/inference" || endpoint === "/api/v1/conversation") ? 30000 : 5000
         ),
       }
     );
