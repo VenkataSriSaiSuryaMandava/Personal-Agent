@@ -1,13 +1,19 @@
+import type { NextRequest } from "next/server";
+import { requireSession, readSession } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import {
   callBackend,
   rejectRequest,
 } from "@/lib/server/backend";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const rejected = rejectRequest(request);
 
   if (rejected) return rejected;
+
+  const unauthorized = await requireSession(request);
+  if (unauthorized) return unauthorized;
+
 
   try {
     const contentType =
@@ -54,7 +60,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         message: body.message.trim(),
       }),
-    });
+    }, readSession(request) ?? undefined);
   } catch {
     return NextResponse.json(
       { detail: "Invalid request" },

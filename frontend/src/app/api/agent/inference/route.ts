@@ -1,3 +1,5 @@
+import type { NextRequest } from "next/server";
+import { requireSession, readSession } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 
 import {
@@ -11,10 +13,14 @@ const allowedPrompts = new Set([
   "productivity_demo",
 ]);
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const rejected = rejectRequest(request);
 
   if (rejected) return rejected;
+
+  const unauthorized = await requireSession(request);
+  if (unauthorized) return unauthorized;
+
 
   try {
     const contentType =
@@ -61,7 +67,7 @@ export async function POST(request: Request) {
         prompt_id: body.prompt_id,
         approved: true,
       }),
-    });
+    }, readSession(request) ?? undefined);
   } catch {
     return NextResponse.json(
       { detail: "Invalid request" },

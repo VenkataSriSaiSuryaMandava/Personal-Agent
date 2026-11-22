@@ -9,16 +9,19 @@ from aegis.main import app
 
 TEST_GATEWAY = "a" * 64
 
-client = TestClient(
-    app,
-    headers={"x-aegis-gateway-token": TEST_GATEWAY},
-)
+
 
 
 VALID_REQUEST = {
     "prompt_id": "general_knowledge",
     "approved": True,
 }
+
+
+@pytest.fixture
+def client(authenticated_environment, gateway_environment):
+
+    return authenticated_environment[0]
 
 
 @pytest.fixture(autouse=True)
@@ -45,7 +48,7 @@ def gateway_environment(monkeypatch, tmp_path):
     )
 
 
-def test_inference_disabled(monkeypatch):
+def test_inference_disabled(monkeypatch, client):
 
     monkeypatch.setenv("AEGIS_CLOUD_ENABLED", "0")
 
@@ -72,7 +75,7 @@ def test_inference_disabled(monkeypatch):
         "message": "Private information",
     },
 ])
-def test_invalid_inference_requests(payload):
+def test_invalid_inference_requests(payload, client):
 
     response = client.post(
         "/api/v1/inference",
@@ -82,7 +85,7 @@ def test_invalid_inference_requests(payload):
     assert response.status_code == 422
 
 
-def test_emergency_stop(monkeypatch):
+def test_emergency_stop(monkeypatch, client):
 
     monkeypatch.setenv("AEGIS_CLOUD_ENABLED", "1")
     monkeypatch.setenv("AEGIS_EMERGENCY_STOP", "1")
@@ -100,7 +103,7 @@ def test_emergency_stop(monkeypatch):
         provider.assert_not_called()
 
 
-def test_inference_success(monkeypatch):
+def test_inference_success(monkeypatch, client):
 
     monkeypatch.setenv("AEGIS_CLOUD_ENABLED", "1")
     monkeypatch.setenv("AEGIS_EMERGENCY_STOP", "0")
@@ -130,7 +133,7 @@ def test_inference_success(monkeypatch):
         )
 
 
-def test_direct_browser_blocked():
+def test_direct_browser_blocked(client):
 
     response = client.post(
         "/api/v1/inference",
@@ -158,7 +161,7 @@ def test_missing_gateway_credential():
         provider.assert_not_called()
 
 
-def test_wrong_gateway_credential():
+def test_wrong_gateway_credential(client):
 
     response = client.post(
         "/api/v1/inference",
@@ -193,7 +196,7 @@ def test_rate_limit(tmp_path):
         limiter.acquire()
 
 
-def test_unapproved_model(monkeypatch):
+def test_unapproved_model(monkeypatch, client):
 
     monkeypatch.setenv("AEGIS_CLOUD_ENABLED", "1")
     monkeypatch.setenv("AEGIS_EMERGENCY_STOP", "0")

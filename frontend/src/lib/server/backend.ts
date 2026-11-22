@@ -41,11 +41,12 @@ export function rejectRequest(request: Request) {
 
 export async function callBackend(
   endpoint: "/api/v1/status" | "/api/v1/chat" | "/api/v1/inference",
-  init: RequestInit = {}
+  init: RequestInit = {},
+  session?: string
 ) {
   const headers = new Headers(init.headers);
 
-  if (endpoint === "/api/v1/inference") {
+  {
     const token = process.env.AEGIS_GATEWAY_TOKEN;
 
     if (!token || token.length < 64) {
@@ -56,6 +57,10 @@ export async function callBackend(
     }
 
     headers.set("x-aegis-gateway-token", token);
+  }
+
+  if (session) {
+    headers.set("Authorization", `Bearer ${session}`);
   }
 
   try {

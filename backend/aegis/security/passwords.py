@@ -38,6 +38,16 @@ def validate_password(password: str) -> None:
             "Password must contain 15 to 128 characters"
         )
 
+    try:
+
+        password.encode("utf-8")
+
+    except UnicodeError:
+
+        raise InvalidPassword(
+            "Invalid password encoding"
+        ) from None
+
     if not password.strip():
         raise InvalidPassword(
             "Password cannot contain only whitespace"
@@ -75,6 +85,7 @@ def verify_password(
     except (
         VerificationError,
         InvalidHashError,
+        UnicodeError,
     ):
 
         return False

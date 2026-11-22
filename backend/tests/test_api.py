@@ -4,10 +4,13 @@ from fastapi.testclient import TestClient
 from aegis.main import app
 
 
-client = TestClient(app)
+@pytest.fixture
+def client(authenticated_environment):
+
+    return authenticated_environment[0]
 
 
-def test_status():
+def test_status(client):
     response = client.get("/api/v1/status")
 
     assert response.status_code == 200
@@ -15,7 +18,7 @@ def test_status():
     assert response.json()["execution_enabled"] is False
 
 
-def test_preview():
+def test_preview(client):
     response = client.post(
         "/api/v1/chat",
         json={"message": "Example prompt"},
@@ -36,7 +39,7 @@ def test_preview():
     {"message": 123},
     {"message": "sample", "scoped_grant": True},
 ])
-def test_invalid_requests(payload):
+def test_invalid_requests(payload, client):
     response = client.post(
         "/api/v1/chat",
         json=payload,
@@ -48,7 +51,7 @@ def test_invalid_requests(payload):
     }
 
 
-def test_untrusted_host():
+def test_untrusted_host(client):
     response = client.get(
         "/health",
         headers={"host": "example.com"},

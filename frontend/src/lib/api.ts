@@ -24,6 +24,12 @@ async function request<T>(
     signal: AbortSignal.timeout(8000),
   });
 
+  if (response.status === 401) {
+    window.dispatchEvent(
+      new Event("aegis-session-expired")
+    );
+  }
+
   if (!response.ok) {
     throw new Error(
       `Request failed (${response.status})`

@@ -4,9 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from fastapi.testclient import TestClient
 
-from aegis.main import app
 from aegis.cli.inference import main as cli_main
 from aegis.security.access import limiter
 from aegis.storage.database import connect
@@ -22,7 +20,11 @@ VALID_REQUEST = {
 
 
 @pytest.fixture
-def environment(monkeypatch, tmp_path):
+def environment(
+    monkeypatch,
+    tmp_path,
+    authenticated_environment,
+):
 
     directory = tmp_path / "private"
     directory.mkdir(mode=0o700)
@@ -43,12 +45,7 @@ def environment(monkeypatch, tmp_path):
     monkeypatch.setenv("GEMINI_API_KEY", "synthetic-key")
     monkeypatch.setenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 
-    client = TestClient(
-        app,
-        headers={
-            "x-aegis-gateway-token": TEST_TOKEN
-        },
-    )
+    client = authenticated_environment[0]
 
     return client, path
 

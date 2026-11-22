@@ -1,6 +1,7 @@
 import os
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from aegis.api.auth import require_owner
 from aegis.config import settings
 
 router = APIRouter()
@@ -15,7 +16,10 @@ def health() -> dict[str, str]:
     }
 
 
-@router.get("/api/v1/status")
+@router.get(
+    "/api/v1/status",
+    dependencies=[Depends(require_owner)],
+)
 def status() -> dict[str, str | bool]:
 
     configured = bool(
