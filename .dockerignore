@@ -1,0 +1,37 @@
+# Allowlist only the files needed to build the public demo.
+**
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/next.config.ts
+!frontend/tsconfig.json
+!frontend/eslint.config.mjs
+!frontend/AGENTS.md
+!frontend/src/
+!frontend/src/**
+!frontend/public/
+!frontend/public/**
+!backend/
+!backend/aegis/
+!backend/aegis/demo.py
+!deploy/
+!deploy/start.sh
+# Never include runtime credentials or local state, even under allowed paths.
+**/.env*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.db*
+**/*.sqlite*
+**/*.log
+**/*.token
+**/credentials.json
+**/client_secret*.json
+**/token.json
+**/secrets/**
+**/private/**
+**/private-data/**
+**/node_modules/**
+**/.next/**
+**/.git/**

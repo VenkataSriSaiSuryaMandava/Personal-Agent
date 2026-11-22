@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PanelLeft, MessageSquare } from "lucide-react";
 import AuthGate from "@/components/auth/AuthGate";
+import DemoWorkspace from "@/components/dashboard/DemoWorkspace";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import StatusCard from "@/components/dashboard/StatusCard";
@@ -12,6 +13,7 @@ import Approvals from "@/components/dashboard/Approvals";
 import { navigation, type Workspace } from "@/lib/navigation";
 
 export default function Home() {
+  if (process.env.NEXT_PUBLIC_AEGIS_DEMO === "1") return <DemoWorkspace />;
   return <AuthGate><Dashboard /></AuthGate>;
 }
 
