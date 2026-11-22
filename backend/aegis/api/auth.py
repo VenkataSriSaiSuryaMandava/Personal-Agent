@@ -86,6 +86,25 @@ def read_session_token(request: Request) -> str:
     return token
 
 
+def require_owner(request: Request) -> int:
+
+    trusted_request(request)
+
+    token = read_session_token(request)
+
+    try:
+
+        return service.authenticate(token)
+
+    except AuthenticationDenied:
+
+        deny(401, "Invalid or expired session")
+
+    except AuthenticationUnavailable:
+
+        deny(503, "Authentication unavailable")
+
+
 async def read_login_request(
     request: Request,
 ) -> LoginRequest:
