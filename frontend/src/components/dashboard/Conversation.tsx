@@ -31,7 +31,7 @@ function selectContext(turns: Turn[], draft: string, include: boolean): Turn[] {
 function errorMessage(status: number) {
   if (status === 401) return "Your session expired. Sign in again.";
   if (status === 403) return "Cloud chat is disabled or this content was blocked by privacy policy. Review the text and server settings.";
-  if (status === 429) return "Usage limit reached (3 requests/minute, 30/day shared with trusted prompts). Try later.";
+  if (status === 429) return "AI request limit reached. Please try again later.";
   if (status === 413 || status === 422) return "Your message or context is invalid or too long.";
   return "Gemini or the local backend is unavailable. No automatic retry was performed.";
 }

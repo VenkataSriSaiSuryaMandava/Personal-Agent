@@ -30,6 +30,13 @@ class PersistentRateLimiter:
 
     def acquire(self) -> None:
 
+        # Optional application-level AI usage limits.
+        import os
+
+        if os.getenv("AEGIS_UNLIMITED_AI") == "1":
+            return
+
+
         now = int(self.clock())
 
         minute_start = now - 60
