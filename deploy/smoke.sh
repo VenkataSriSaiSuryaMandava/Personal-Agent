@@ -19,7 +19,8 @@ for (( i=0; i<60; i++ )); do
   sleep 1
 done
 if (( ready == 0 )); then echo 'Demo health check failed' >&2; exit 1; fi
-curl -fsS --max-time 10 "$base/" | grep -F 'Public demo' >/dev/null
+curl -fsS --max-time 10 "$base/" | grep -F 'Your command center.' >/dev/null
+curl -fsS --max-time 10 "$base/" | grep -F 'Sign in as Owner to use AI' >/dev/null
 for id in search systems project; do
   curl -fsS --max-time 10 "$base/api/demo/example?id=$id" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["mode"]=="recorded_demo" and d["prompt"] and d["answer"]'
 done
