@@ -16,6 +16,28 @@ import {
 
 import { writeWorkspaceLocation } from "@/lib/workspace-location";
 
+const GUEST_SESSION_KEY = "aegis-guest-preview";
+
+function hasGuestSession() {
+  try {
+    return sessionStorage.getItem(GUEST_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberGuestSession(enabled: boolean) {
+  try {
+    if (enabled) {
+      sessionStorage.setItem(GUEST_SESSION_KEY, "1");
+    } else {
+      sessionStorage.removeItem(GUEST_SESSION_KEY);
+    }
+  } catch {
+    // Guest preference storage is optional.
+  }
+}
+
 type AuthState =
   | "checking"
   | "locked"
@@ -56,7 +78,7 @@ export default function AuthGate({
           response.ok && body.authenticated === true
             ? "authenticated"
             : response.status === 401
-              ? "locked"
+              ? hasGuestSession() ? "guest" : "locked"
               : "unavailable"
         );
       } catch {
@@ -67,6 +89,7 @@ export default function AuthGate({
     void check();
 
     function expired() {
+      rememberGuestSession(false);
       setState("locked");
     }
 
@@ -107,6 +130,7 @@ export default function AuthGate({
       const result = await response.json();
 
       if (response.ok && result.authenticated === true) {
+        rememberGuestSession(false);
         writeWorkspaceLocation("overview", "general", true);
         setState("authenticated");
         setUsername("");
@@ -144,6 +168,7 @@ export default function AuthGate({
         throw new Error("Logout failed");
       }
 
+      rememberGuestSession(false);
       setState("locked");
     } catch {
       setError("Logout failed. Please retry.");
@@ -165,6 +190,7 @@ export default function AuthGate({
             onClick={() => {
               setError("");
               setPassword("");
+              rememberGuestSession(false);
               setState("locked");
             }}
           >
@@ -298,6 +324,8 @@ export default function AuthGate({
               onClick={() => {
                 setPassword("");
                 setError("");
+                rememberGuestSession(true);
+                writeWorkspaceLocation("overview", "general", true);
                 setState("guest");
               }}
             >
