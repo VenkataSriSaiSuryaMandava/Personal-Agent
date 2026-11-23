@@ -1,0 +1,115 @@
+.aw-workspace {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.aw-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.aw-heading h2 {
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.aw-heading p,
+.aw-card p,
+.aw-next p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 7px;
+}
+
+.aw-symbol {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  color: var(--accent);
+  background: var(--hover);
+}
+
+.aw-badge {
+  margin-left: auto;
+  padding: 6px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--panel);
+  font-size: 11px;
+}
+
+.aw-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.aw-card {
+  min-height: 195px;
+}
+
+.aw-card h3,
+.aw-next h3 {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.aw-card ul {
+  margin: 13px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 2.1;
+}
+
+.aw-note {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.aw-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 18px;
+}
+
+.aw-next > div {
+  min-width: 0;
+}
+
+.aw-next button {
+  flex-shrink: 0;
+}
+
+.aw-example {
+  color: var(--text) !important;
+}
+
+@media (max-width: 750px) {
+  .aw-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .aw-next {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .aw-heading {
+    flex-wrap: wrap;
+  }
+}

@@ -18,6 +18,7 @@ import Conversation from "@/components/dashboard/Conversation";
 import SystemStatus from "@/components/dashboard/SystemStatus";
 import Approvals from "@/components/dashboard/Approvals";
 import SettingsWorkspace from "@/components/settings/SettingsWorkspace";
+import WorkspacePreview from "@/components/workspaces/WorkspacePreview";
 
 import {
   readWorkspaceLocation,
@@ -431,27 +432,18 @@ function Dashboard() {
               {active !== "chat" &&
                active !== "overview" &&
                active !== "settings" && (
-                <>
-                  <div className="page-heading">
-                    <h1>{current.label}</h1>
-                    <p>
-                      Manage your {current.label.toLowerCase()}
-                      {" workspace."}
-                    </p>
-                  </div>
-
-                  <section className="panel placeholder-panel">
-                    <current.icon size={42}/>
-                    <h2>{current.label}</h2>
-                    <p>This workspace is not connected yet.</p>
-                    <button
-                      className="secondary-button"
-                      onClick={() => navigate("overview")}
-                    >
-                      Return to overview
-                    </button>
-                  </section>
-                </>
+                <WorkspacePreview
+                  workspace={active}
+                  onNavigate={navigate}
+                  onOpenSecurity={() => {
+                    setActive("settings");
+                    setSettingsSection("security");
+                    writeWorkspaceLocation(
+                      "settings",
+                      "security"
+                    );
+                  }}
+                />
               )}
             </>
           )}
