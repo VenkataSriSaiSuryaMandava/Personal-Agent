@@ -8,7 +8,7 @@ const LOCAL_ORIGINS = new Set([
 ]);
 
 export function rejectRequest(request: Request) {
-  if (process.env.AEGIS_LOCAL_BACKEND !== "1") {
+  if (process.env.AEGIS_PUBLIC_DEMO === "1" || process.env.AEGIS_LOCAL_BACKEND !== "1") {
     return NextResponse.json(
       { detail: "Local backend access is disabled" },
       { status: 403 }

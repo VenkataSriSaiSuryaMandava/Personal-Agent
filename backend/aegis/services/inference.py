@@ -8,6 +8,7 @@ from aegis.schemas.inference import (
 )
 
 from aegis.security.access import limiter
+from aegis.security.runtime_controls import runtime_controls
 
 from aegis.security.gateway import (
     GatewayContext,
@@ -34,6 +35,8 @@ def run_inference(
         raise GatewayDenied(
             "Emergency stop is active"
         )
+
+    runtime_controls.require_cloud()
 
     if request.approved is not True:
         raise GatewayDenied(
@@ -71,6 +74,11 @@ def run_inference(
             "Invalid provider configuration"
         ) from None
 
+    def reserve_request():
+        runtime_controls.require_cloud()
+        limiter.acquire()
+        runtime_controls.require_cloud()
+
     gateway = OutboundGateway(
         provider,
         GatewayContext(
@@ -78,12 +86,14 @@ def run_inference(
             scoped_grant=True,
             emergency_stop=False,
         ),
-        before_request=limiter.acquire,
+        before_request=reserve_request,
     )
 
     result = gateway.complete(
         request.prompt_id
     )
+
+    runtime_controls.require_cloud()
 
     return InferenceResponse(
         model=model,

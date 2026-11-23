@@ -12,7 +12,7 @@ permissions:
 jobs:
   frontend:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     defaults:
       run:
@@ -48,3 +48,11 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+      - name: Build Docker public demo
+        working-directory: .
+        run: docker build -t aegis-demo:ci .
+
+      - name: Smoke test Docker public demo
+        working-directory: .
+        run: bash deploy/smoke.sh aegis-demo:ci

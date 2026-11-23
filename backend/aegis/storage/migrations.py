@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 from aegis.storage.database import (
@@ -6,7 +7,10 @@ from aegis.storage.database import (
 )
 
 
-SCHEMA_VERSION = 2
+from aegis.storage.settings import ApplicationSettings
+
+
+SCHEMA_VERSION = 3
 
 
 def initialize_database(
@@ -117,4 +121,58 @@ def initialize_database(
 
             connection.execute(
                 "PRAGMA user_version = 2"
+            )
+
+            version = 2
+
+        if version == 2:
+
+            connection.execute("""
+                CREATE TABLE application_settings (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    payload TEXT NOT NULL,
+                    revision INTEGER NOT NULL
+                        CHECK (revision >= 1),
+                    updated_at INTEGER NOT NULL
+                        CHECK (updated_at >= 0)
+                )
+            """)
+
+            connection.execute("""
+                CREATE TABLE security_audit_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_type TEXT NOT NULL CHECK (
+                        event_type IN (
+                            'settings.updated',
+                            'emergency_stop.enabled',
+                            'emergency_stop.disabled'
+                        )
+                    ),
+                    settings_revision INTEGER NOT NULL
+                        CHECK (settings_revision >= 1),
+                    created_at INTEGER NOT NULL
+                        CHECK (created_at >= 0)
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_security_audit_created_at
+                ON security_audit_events(created_at)
+            """)
+
+            connection.execute("""
+                INSERT INTO application_settings (
+                    id,
+                    payload,
+                    revision,
+                    updated_at
+                )
+                VALUES (1, ?, 1, ?)
+            """, (
+                ApplicationSettings().model_dump_json(),
+                int(time.time()),
+            ))
+
+            connection.execute(
+                "PRAGMA user_version = 3"
             )

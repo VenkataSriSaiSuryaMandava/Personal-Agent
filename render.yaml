@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: aegis-ai
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/demo/health
+    autoDeployTrigger: checksPass

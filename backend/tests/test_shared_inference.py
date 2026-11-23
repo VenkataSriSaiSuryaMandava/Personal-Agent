@@ -33,6 +33,30 @@ def environment(
 
     initialize_database(path)
 
+    # The owner authentication fixture already provides
+    # an isolated database containing application settings.
+    # Keep its security permissions separate from the
+    # usage database so quota-failure tests remain valid.
+    from aegis.security.runtime_controls import runtime_controls
+    from aegis.storage.settings import (
+        ApplicationSettings,
+        save_settings,
+    )
+
+    security_path = authenticated_environment[3]
+
+    save_settings(
+        ApplicationSettings(cloud_enabled=True),
+        1,
+        security_path,
+    )
+
+    monkeypatch.setattr(
+        runtime_controls,
+        "path",
+        security_path,
+    )
+
     monkeypatch.setattr(limiter, "path", path)
 
     monkeypatch.setattr(

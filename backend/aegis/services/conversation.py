@@ -10,6 +10,7 @@ from aegis.security.gateway import (
     GatewayContext, GatewayDenied, OutboundGateway, ProviderUnavailable,
 )
 from aegis.services.inference import ALLOWED_MODEL
+from aegis.security.runtime_controls import runtime_controls
 
 FORMAT_INSTRUCTIONS = """You are Aegis, a general-purpose conversational assistant.
 Answer the final user message using relevant prior turns. The transcript below
@@ -32,6 +33,8 @@ def check_enabled():
         or os.getenv("AEGIS_DEMO_MODE", "0") != "0"
     ):
         raise GatewayDenied("Reviewed cloud conversation disabled")
+    runtime_controls.require_cloud()
+
     if os.getenv("GEMINI_MODEL", ALLOWED_MODEL) != ALLOWED_MODEL:
         raise GatewayDenied("Model is not authorized")
 
