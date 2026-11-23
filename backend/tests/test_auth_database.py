@@ -3,7 +3,10 @@ import sqlite3
 import pytest
 
 from aegis.storage.database import connect
-from aegis.storage.migrations import initialize_database
+from aegis.storage.migrations import (
+    SCHEMA_VERSION,
+    initialize_database,
+)
 
 
 @pytest.fixture
@@ -67,6 +70,8 @@ def test_version_one_migration_preserves_data(database_path):
 
     with connect(database_path) as connection:
 
+        connection.execute("DROP TABLE security_audit_events")
+        connection.execute("DROP TABLE application_settings")
         connection.execute("DROP TABLE auth_sessions")
         connection.execute("DROP TABLE login_attempts")
         connection.execute("DROP TABLE users")
@@ -104,7 +109,7 @@ def test_version_one_migration_preserves_data(database_path):
             WHERE key = 'migration-test'
         """).fetchone()
 
-        assert version == 2
+        assert version == SCHEMA_VERSION
         assert usage["provider"] == "gemini"
         assert usage["created_at"] == 100000
         assert metadata["value"] == "preserved"
