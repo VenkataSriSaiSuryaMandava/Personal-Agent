@@ -121,7 +121,7 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
         <div className="ac-brand"><span className="ac-logo"><Sparkles size={22} /></span><div>
           <h2>Aegis Assistant</h2><p>{guest ? "AI unavailable in Guest mode" : "Gemini 3.1 Flash-Lite · Cloud assistant"}</p>
         </div></div>
-        <button type="button" className="ac-button" disabled={busy || guest} onClick={newChat}><Plus size={16}/> New chat</button>
+        <button type="button" className="ac-button" disabled={busy} onClick={newChat}><Plus size={16}/> New chat</button>
       </header>
       <div className="ac-scroll" ref={messages} aria-live="polite" aria-busy={busy}>
         {turns.length === 0 && !pending && <div className="ac-welcome">
@@ -129,7 +129,7 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
           <span className="ac-eyebrow">YOUR INTELLIGENCE WORKSPACE</span>
           <h1>What can I help you with?</h1>
           <p>Explore ideas, understand concepts, solve problems and write better code.</p>
-          <div className="ac-suggestions">{SUGGESTIONS.map(([title, prompt]) => <button key={title} type="button" disabled={guest} onClick={() => update(prompt)}>
+          <div className="ac-suggestions">{SUGGESTIONS.map(([title, prompt]) => <button key={title} type="button" disabled={busy} onClick={() => update(prompt)}>
             <strong>{title}</strong><span>{prompt}</span>
           </button>)}</div>
         </div>}
@@ -146,7 +146,7 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
         {pending && <article className="ac-turn"><div className="ac-user"><span>You</span><p>{pending}</p></div><div className="ac-loading" role="status"><LoaderCircle size={18}/> Generating response…</div></article>}
       </div>
       <form className="ac-composer" onSubmit={event => { event.preventDefault(); void send(); }}>
-        <textarea aria-label="Message Aegis" placeholder={guest ? "Sign in as Owner to use AI" : "Ask Aegis anything non-private…"} value={draft} maxLength={4000} rows={3} disabled={busy || guest} onChange={event => update(event.target.value)} onKeyDown={event => {
+        <textarea aria-label="Message Aegis" placeholder={guest ? "Try the composer — AI requires Owner access" : "Ask Aegis anything non-private…"} value={draft} maxLength={4000} rows={3} disabled={busy} onChange={event => update(event.target.value)} onKeyDown={event => {
           if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); }
         }}/>
         <div className="ac-privacy-bar">
@@ -155,7 +155,7 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
             <input
               type="checkbox"
               checked={include}
-              disabled={busy || guest}
+              disabled={busy}
               onChange={event => setInclude(event.target.checked)}
             />
             Include recent context

@@ -129,7 +129,28 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   )!;
 
   useEffect(() => {
-    if (guest) return;
+    if (guest) {
+      let mounted = true;
+
+      queueMicrotask(() => {
+        if (!mounted) return;
+
+        const location = readWorkspaceLocation("overview");
+
+        setActive(location.workspace);
+        setSettingsSection(location.section);
+
+        writeWorkspaceLocation(
+          location.workspace,
+          location.section,
+          true
+        );
+      });
+
+      return () => {
+        mounted = false;
+      };
+    }
 
     let mounted = true;
 
