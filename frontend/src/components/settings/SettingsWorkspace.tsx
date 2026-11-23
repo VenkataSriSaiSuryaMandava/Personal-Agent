@@ -28,6 +28,7 @@ import {
   getStorage,
   type AuditResponse,
   type GeneralPreferences,
+  type SecurityPreferences,
   type ProvidersResponse,
   type SettingsSnapshot,
   type StorageResponse,
@@ -58,7 +59,7 @@ type Props = {
   snapshot: SettingsSnapshot;
   busy: boolean;
   onSave: (
-    changes: Partial<GeneralPreferences>
+    changes: Partial<GeneralPreferences & SecurityPreferences>
   ) => Promise<boolean>;
   onReset: () => Promise<boolean>;
   onReload: () => Promise<boolean>;
@@ -376,112 +377,233 @@ function ProviderSettings({
   );
 }
 
+type SecurityField =
+  keyof SecurityPreferences;
+
+function SecurityControl({
+  title,
+  description,
+  field,
+  enabled,
+  busy,
+  editable,
+  enforced,
+  onSave,
+}: {
+  title: string;
+  description: string;
+  field: SecurityField;
+  enabled: boolean;
+  busy: boolean;
+  editable: boolean;
+  enforced: boolean;
+  onSave: Props["onSave"];
+}) {
+  const [confirm, setConfirm] = useState(false);
+
+  const isEmergency = field === "emergency_stop";
+  const nextValue = !enabled;
+
+  const available = editable && enforced && !busy;
+
+  const stateLabel = isEmergency
+    ? enabled ? "Stop active" : "System ready"
+    : enabled ? "Cloud enabled" : "Cloud disabled";
+
+  const warning = isEmergency
+    ? nextValue
+      ? "Activate emergency stop? New cloud requests will be blocked. Already transmitted requests cannot be recalled."
+      : "Deactivate emergency stop? Cloud inference will still require separate authorization and server permission."
+    : nextValue
+      ? "Enable cloud AI? Approved public or synthetic content may be transmitted to an external provider. Never include private information."
+      : "Disable cloud AI? New external AI requests will be denied.";
+
+  return (
+    <div
+      className="as-control-card"
+      data-enabled={enabled}
+      data-emergency={isEmergency}
+    >
+      <div className="as-control-main">
+        <div className="as-control-copy">
+          <div className="as-control-heading">
+            <h3>{title}</h3>
+
+            <span
+              className="as-state-pill"
+              data-active={enabled}
+              data-emergency={isEmergency}
+            >
+              <span className="as-state-dot" />
+              {stateLabel}
+            </span>
+          </div>
+
+          <p>{description}</p>
+        </div>
+
+        <button
+          type="button"
+          role="switch"
+          aria-label={title}
+          aria-checked={enabled}
+          aria-disabled={!available}
+          disabled={!available}
+          className="as-toggle"
+          data-on={enabled}
+          data-emergency={isEmergency}
+          onClick={() => setConfirm(true)}
+        >
+          <span className="as-toggle-thumb" />
+        </button>
+      </div>
+
+      {!enforced && (
+        <p className="as-control-hint">
+          Runtime enforcement is unavailable.
+          This control cannot be changed.
+        </p>
+      )}
+
+      {confirm && (
+        <div
+          className="as-control-confirm"
+          role="group"
+          aria-label={"Confirm " + title}
+        >
+          <div className="as-confirm-header">
+            <strong>
+              {isEmergency
+                ? nextValue
+                  ? "Activate emergency stop"
+                  : "Deactivate emergency stop"
+                : nextValue
+                  ? "Enable cloud AI access"
+                  : "Disable cloud AI access"}
+            </strong>
+            <span>Confirmation required</span>
+          </div>
+
+          <p>{warning}</p>
+
+          <div className="as-control-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={busy}
+              onClick={() => setConfirm(false)}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              className="as-primary"
+              disabled={!available}
+              onClick={async () => {
+                const changes = {
+                  [field]: nextValue,
+                } as Partial<SecurityPreferences>;
+
+                if (await onSave(changes)) {
+                  setConfirm(false);
+                }
+              }}
+            >
+              {busy ? "Saving…" : "Confirm change"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SecuritySettings({
   snapshot,
-}: {
-  snapshot: SettingsSnapshot;
-}) {
+  busy,
+  onSave,
+}: Props) {
   return (
     <section className="panel as-panel">
-      <h2>Security controls</h2>
-
+      <h2>Security</h2>
       <p className="as-description">
-        Authentication and application security.
+        Manage access and emergency protection.
       </p>
 
-      <Notice>
-        Database-controlled security enforcement is not active
-        yet. These preferences are read-only until the
-        security implementation is connected.
-      </Notice>
+      <SecurityControl
+        key={"stop-" + snapshot.revision}
+        field="emergency_stop"
+        title="Emergency stop"
+        description="Immediately denies new cloud AI requests."
+        enabled={snapshot.settings.emergency_stop}
+        busy={busy}
+        editable={snapshot.editable_fields.includes(
+          "emergency_stop"
+        )}
+        enforced={snapshot.security_enforcement_active}
+        onSave={onSave}
+      />
 
       <SettingRow
         title="Owner authentication"
-        description="Authenticated private workspace"
+        description="Required to access your private workspace."
       >
-        <Status tone="good">Required</Status>
+        <Status tone="good">Protected</Status>
       </SettingRow>
 
       <SettingRow
-        title="Emergency stop"
-        description="Stored preference, not current runtime status"
+        title="Tool permissions"
+        description="Scoped access and action approvals."
       >
-        <Status>
-          {snapshot.settings.emergency_stop
-            ? "Enabled preference"
-            : "Disabled preference"}
-        </Status>
+        <Status>Coming later</Status>
       </SettingRow>
 
-      <SettingRow
-        title="Session management"
-        description="Logout is available in the owner toolbar."
-      >
-        <Status>Additional controls planned</Status>
-      </SettingRow>
-
-      <SettingRow
-        title="Permissions and approvals"
-        description="Scoped access for future tools and integrations"
-      >
-        <Status>Pending implementation</Status>
-      </SettingRow>
-
-      <SettingRow title="Autonomous actions">
-        <Status>Not available</Status>
-      </SettingRow>
+      <Notice>
+        Emergency stop cannot recall requests already sent.
+        Use the confirmation control above to change its state.
+      </Notice>
     </section>
   );
 }
 
 function PrivacySettings({
   snapshot,
-}: {
-  snapshot: SettingsSnapshot;
-}) {
+  busy,
+  onSave,
+}: Props) {
   return (
     <section className="panel as-panel">
-      <h2>Privacy and data</h2>
-
+      <h2>Privacy</h2>
       <p className="as-description">
-        Understand where your information is stored and sent.
+        Control access to external AI providers.
       </p>
 
+      <SecurityControl
+        key={"cloud-" + snapshot.revision}
+        field="cloud_enabled"
+        title="Cloud AI access"
+        description="Allow individually approved public or synthetic requests."
+        enabled={snapshot.settings.cloud_enabled}
+        busy={busy}
+        editable={snapshot.editable_fields.includes(
+          "cloud_enabled"
+        )}
+        enforced={snapshot.security_enforcement_active}
+        onSave={onSave}
+      />
+
       <Notice>
-        Only send non-private content to the cloud assistant.
-        Automatic sensitive-content checks cannot detect every
-        form of private information.
+        Private and sensitive data remain blocked from cloud AI.
+        Content checks are not perfect, so review every request.
+        Emergency stop is managed in Security.
       </Notice>
 
       <SettingRow
-        title="Cloud AI preference"
-        description="Runtime access currently depends on server configuration."
-      >
-        <Status>
-          {snapshot.settings.cloud_enabled ? "On" : "Off"}
-          {" · stored only"}
-        </Status>
-      </SettingRow>
-
-      <SettingRow
-        title="Conversation retention"
-        description="Persistent conversation history is not implemented."
+        title="Conversation history"
+        description="Saved conversations are not implemented yet."
       >
         <Status>Not available</Status>
-      </SettingRow>
-
-      <SettingRow
-        title="Private account data"
-        description="Not authorized for cloud AI transmission."
-      >
-        <Status>Local-only policy</Status>
-      </SettingRow>
-
-      <SettingRow
-        title="Public demo"
-        description="Isolated recorded examples without owner credentials."
-      >
-        <Status tone="good">Isolated</Status>
       </SettingRow>
     </section>
   );
@@ -698,11 +820,11 @@ export default function SettingsWorkspace(props: Props) {
           )}
 
           {section === "security" && (
-            <SecuritySettings snapshot={snapshot} />
+            <SecuritySettings {...props} />
           )}
 
           {section === "privacy" && (
-            <PrivacySettings snapshot={snapshot} />
+            <PrivacySettings {...props} />
           )}
 
           {section === "storage" && (

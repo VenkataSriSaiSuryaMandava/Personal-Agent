@@ -26,13 +26,18 @@ from aegis.storage.settings import (
 )
 
 
-# Security-related preferences become writable only
-# when their runtime enforcement is implemented.
-EDITABLE_FIELDS = frozenset({
+GENERAL_FIELDS = frozenset({
     "theme",
     "startup_workspace",
     "response_style",
 })
+
+SECURITY_FIELDS = frozenset({
+    "cloud_enabled",
+    "emergency_stop",
+})
+
+EDITABLE_FIELDS = GENERAL_FIELDS | SECURITY_FIELDS
 
 
 class UnsupportedSetting(ValueError):
@@ -48,7 +53,7 @@ def serialize_settings(
         revision=snapshot.revision,
         updated_at=snapshot.updated_at,
         editable_fields=sorted(EDITABLE_FIELDS),
-        security_enforcement_active=False,
+        security_enforcement_active=True,
     )
 
 
@@ -111,7 +116,7 @@ class SettingsService:
 
         changes = {
             field: defaults[field]
-            for field in EDITABLE_FIELDS
+            for field in GENERAL_FIELDS
         }
 
         # A general reset must never disable an emergency

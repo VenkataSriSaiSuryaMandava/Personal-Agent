@@ -10,7 +10,27 @@ from aegis.schemas.conversation import ConversationRequest
 
 
 @pytest.fixture
-def reviewed(monkeypatch):
+def reviewed(monkeypatch, tmp_path):
+    from aegis.security.runtime_controls import runtime_controls
+    from aegis.storage.migrations import initialize_database
+    from aegis.storage.settings import (
+        ApplicationSettings,
+        save_settings,
+    )
+
+    directory = tmp_path / "runtime"
+    directory.mkdir(mode=0o700)
+    path = directory / "runtime.sqlite3"
+
+    initialize_database(path)
+    save_settings(
+        ApplicationSettings(cloud_enabled=True),
+        1,
+        path,
+    )
+
+    monkeypatch.setattr(runtime_controls, "path", path)
+
     monkeypatch.setenv("AEGIS_CLOUD_ENABLED", "1")
     monkeypatch.setenv("AEGIS_CUSTOM_CLOUD_ENABLED", "1")
     monkeypatch.setenv("AEGIS_EMERGENCY_STOP", "0")

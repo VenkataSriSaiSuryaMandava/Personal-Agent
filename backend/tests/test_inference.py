@@ -37,6 +37,16 @@ def gateway_environment(monkeypatch, tmp_path):
 
     initialize_database(path)
 
+    from aegis.security.runtime_controls import runtime_controls
+    from aegis.storage.settings import ApplicationSettings, save_settings
+
+    save_settings(
+        ApplicationSettings(cloud_enabled=True),
+        1,
+        path,
+    )
+
+    monkeypatch.setattr(runtime_controls, "path", path)
     monkeypatch.setattr(limiter, "path", path)
 
     monkeypatch.setenv(

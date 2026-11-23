@@ -135,9 +135,11 @@ def test_get_settings(settings_client):
         "theme",
         "startup_workspace",
         "response_style",
+        "cloud_enabled",
+        "emergency_stop",
     }
 
-    assert data["security_enforcement_active"] is False
+    assert data["security_enforcement_active"] is True
 
 
 def test_response_security_headers(settings_client):
@@ -225,8 +227,6 @@ def test_no_op_update(settings_client):
     {"primary_provider": "groq"},
     {"fallback_provider": "gemini"},
     {"fallback_enabled": True},
-    {"cloud_enabled": True},
-    {"emergency_stop": True},
     {"retain_conversations": True},
     {},
 ])
