@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 
+import { writeWorkspaceLocation } from "@/lib/workspace-location";
+
 type AuthState =
   | "checking"
   | "locked"
@@ -105,6 +107,7 @@ export default function AuthGate({
       const result = await response.json();
 
       if (response.ok && result.authenticated === true) {
+        writeWorkspaceLocation("overview", "general", true);
         setState("authenticated");
         setUsername("");
       } else {
@@ -301,8 +304,8 @@ export default function AuthGate({
               Explore as Guest
             </button>
             <p>
-              Recorded examples only. No private data,
-              account access, or live AI.
+              Explore the same workspace interface.
+              Private data and live AI require Owner access.
             </p>
           </div>
         )}
