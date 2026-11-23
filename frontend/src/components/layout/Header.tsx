@@ -5,12 +5,14 @@ import { Moon, Sun, Shield } from "lucide-react";
 interface HeaderProps {
   title: string;
   dark: boolean;
+  themeDisabled?: boolean;
   onToggleTheme: () => void;
 }
 
 export default function Header({
   title,
   dark,
+  themeDisabled = false,
   onToggleTheme,
 }: HeaderProps) {
   return (
@@ -27,6 +29,7 @@ export default function Header({
 
         <button
           className="icon-button"
+          disabled={themeDisabled}
           onClick={onToggleTheme}
           aria-label="Toggle color theme"
         >
