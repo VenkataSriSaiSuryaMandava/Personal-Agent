@@ -10,7 +10,6 @@ import {
 import { PanelLeft, MessageSquare } from "lucide-react";
 
 import AuthGate from "@/components/auth/AuthGate";
-import DemoWorkspace from "@/components/dashboard/DemoWorkspace";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import StatusCard from "@/components/dashboard/StatusCard";
@@ -82,7 +81,7 @@ function serverColorScheme() {
 
 export default function Home() {
   if (process.env.NEXT_PUBLIC_AEGIS_DEMO === "1") {
-    return <DemoWorkspace />;
+    return <Dashboard guest />;
   }
 
   return (
