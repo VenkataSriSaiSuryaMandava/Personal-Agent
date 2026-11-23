@@ -13,16 +13,20 @@ import {
   LogOut,
 } from "lucide-react";
 
+
 type AuthState =
   | "checking"
   | "locked"
+  | "guest"
   | "authenticated"
   | "unavailable";
 
 export default function AuthGate({
   children,
+  guestContent,
 }: {
   children: ReactNode;
+  guestContent: ReactNode;
 }) {
   const [state, setState] = useState<AuthState>("checking");
   const [username, setUsername] = useState("");
@@ -145,6 +149,30 @@ export default function AuthGate({
     }
   }
 
+  if (state === "guest") {
+    return (
+      <>
+        <div className="aegis-auth-bar">
+          <span>
+            <Shield size={16} />
+            Guest preview · AI disabled
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setError("");
+              setPassword("");
+              setState("locked");
+            }}
+          >
+            Back to login
+          </button>
+        </div>
+        {guestContent}
+      </>
+    );
+  }
+
   if (state === "authenticated") {
     return (
       <>
@@ -255,8 +283,32 @@ export default function AuthGate({
           </form>
         )}
 
+        {state === "locked" && (
+          <div className="aegis-guest-entry">
+            <div className="aegis-guest-divider">
+              <span>or</span>
+            </div>
+            <button
+              type="button"
+              className="aegis-guest-button"
+              disabled={busy}
+              onClick={() => {
+                setPassword("");
+                setError("");
+                setState("guest");
+              }}
+            >
+              Explore as Guest
+            </button>
+            <p>
+              Recorded examples only. No private data,
+              account access, or live AI.
+            </p>
+          </div>
+        )}
+
         <div className="aegis-auth-footer">
-          Single-owner access · Local authentication
+          Owner access requires authentication · Guest preview is restricted
         </div>
       </section>
     </main>

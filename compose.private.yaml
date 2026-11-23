@@ -1,0 +1,65 @@
+name: aegis-private
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.private
+      target: backend
+
+    env_file:
+      - "${HOME}/Library/Application Support/AegisAI/runtime.env"
+      - "${HOME}/Library/Application Support/AegisAI/gateway.env"
+
+    environment:
+      HOME: /home/aegis
+      AEGIS_PUBLIC_DEMO: "0"
+      AEGIS_DEMO_MODE: "0"
+
+    expose:
+      - "8000"
+
+    volumes:
+      - type: volume
+        source: aegis_private_data
+        target: /home/aegis/Library/Application Support/AegisAI
+
+    restart: unless-stopped
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.private
+      target: frontend
+
+    env_file:
+      - "${HOME}/Library/Application Support/AegisAI/gateway.env"
+
+    environment:
+      NODE_ENV: production
+      AEGIS_PUBLIC_DEMO: "0"
+      AEGIS_LOCAL_BACKEND: "1"
+      AEGIS_INTERNAL_BACKEND_URL: http://backend:8000
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+volumes:
+  aegis_private_data:

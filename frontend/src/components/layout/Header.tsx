@@ -6,6 +6,7 @@ interface HeaderProps {
   title: string;
   dark: boolean;
   themeDisabled?: boolean;
+  guest?: boolean;
   onToggleTheme: () => void;
 }
 
@@ -13,6 +14,7 @@ export default function Header({
   title,
   dark,
   themeDisabled = false,
+  guest = false,
   onToggleTheme,
 }: HeaderProps) {
   return (
@@ -24,7 +26,7 @@ export default function Header({
       <div className="header-actions">
         <span className="mode-label">
           <Shield size={14} />
-          Owner workspace
+          {guest ? "Guest workspace" : "Owner workspace"}
         </span>
 
         <button

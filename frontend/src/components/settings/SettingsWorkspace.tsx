@@ -668,7 +668,13 @@ function StorageSettings({
   );
 }
 
-export default function SettingsWorkspace(props: Props) {
+export default function SettingsWorkspace(
+  props: Props & { guest?: boolean }
+) {
+  const guest = props.guest === true;
+  const safeProps: Props = guest
+    ? { ...props, busy: true }
+    : props;
   const {
     snapshot,
     busy,
@@ -692,6 +698,8 @@ export default function SettingsWorkspace(props: Props) {
   const [auditBusy, setAuditBusy] = useState(false);
 
   useEffect(() => {
+    if (guest) return;
+
     let active = true;
 
     Promise.allSettled([
@@ -726,10 +734,10 @@ export default function SettingsWorkspace(props: Props) {
     return () => {
       active = false;
     };
-  }, [snapshot.revision, refresh]);
+  }, [snapshot.revision, refresh, guest]);
 
   async function loadOlder() {
-    if (!audit?.next_before_id || auditBusy) return;
+    if (guest || !audit?.next_before_id || auditBusy) return;
 
     setAuditBusy(true);
 
@@ -778,19 +786,21 @@ export default function SettingsWorkspace(props: Props) {
           ))}
 
           <div className="as-revision">
-            Local revision {snapshot.revision}
+            {guest ? "Guest preview" : `Local revision ${snapshot.revision}`}
           </div>
         </nav>
 
         <div className="as-content">
           <div className="as-content-toolbar">
             <span className="as-muted">
-              Last saved: {formatTime(snapshot.updated_at)}
+              {guest
+                ? "Guest preview · No private settings loaded"
+                : `Last saved: ${formatTime(snapshot.updated_at)}`}
             </span>
 
             <button
               className="secondary-button"
-              disabled={busy || auditBusy}
+              disabled={guest || busy || auditBusy}
               onClick={async () => {
                 if (await props.onReload()) {
                   setRefresh(value => value + 1);
@@ -809,7 +819,7 @@ export default function SettingsWorkspace(props: Props) {
           )}
 
           <div hidden={section !== "general"}>
-            <GeneralSettings key={snapshot.revision} {...props} />
+            <GeneralSettings key={snapshot.revision} {...safeProps} />
           </div>
 
           {section === "ai" && (
@@ -820,11 +830,11 @@ export default function SettingsWorkspace(props: Props) {
           )}
 
           {section === "security" && (
-            <SecuritySettings {...props} />
+            <SecuritySettings {...safeProps} />
           )}
 
           {section === "privacy" && (
-            <PrivacySettings {...props} />
+            <PrivacySettings {...safeProps} />
           )}
 
           {section === "storage" && (

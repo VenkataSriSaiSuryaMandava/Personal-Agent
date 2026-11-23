@@ -36,7 +36,7 @@ function errorMessage(status: number) {
   return "Gemini or the local backend is unavailable. No automatic retry was performed.";
 }
 
-export default function Conversation() {
+export default function Conversation({ guest = false }: { guest?: boolean }) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [include, setInclude] = useState(true);
@@ -49,7 +49,7 @@ export default function Conversation() {
   const controller = useRef<AbortController | null>(null);
   const text = draft.trim();
   const history = selectContext(turns, text, include);
-  const ready = Boolean(text && text.length <= 4000 && bytes(text) <= 16000 && !busy);
+  const ready = Boolean(!guest && text && text.length <= 4000 && bytes(text) <= 16000 && !busy);
 
   useEffect(() => {
     if (messages.current) messages.current.scrollTop = messages.current.scrollHeight;
@@ -69,7 +69,7 @@ export default function Conversation() {
   }
 
   async function send() {
-    if (!ready || busyRef.current) return;
+    if (guest || !ready || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setPending(text);
@@ -119,9 +119,9 @@ export default function Conversation() {
     <section className="ac-panel" aria-label="Aegis conversation">
       <header className="ac-header">
         <div className="ac-brand"><span className="ac-logo"><Sparkles size={22} /></span><div>
-          <h2>Aegis Assistant</h2><p>Gemini 3.1 Flash-Lite · Cloud assistant</p>
+          <h2>Aegis Assistant</h2><p>{guest ? "AI unavailable in Guest mode" : "Gemini 3.1 Flash-Lite · Cloud assistant"}</p>
         </div></div>
-        <button type="button" className="ac-button" disabled={busy} onClick={newChat}><Plus size={16}/> New chat</button>
+        <button type="button" className="ac-button" disabled={busy || guest} onClick={newChat}><Plus size={16}/> New chat</button>
       </header>
       <div className="ac-scroll" ref={messages} aria-live="polite" aria-busy={busy}>
         {turns.length === 0 && !pending && <div className="ac-welcome">
@@ -129,7 +129,7 @@ export default function Conversation() {
           <span className="ac-eyebrow">YOUR INTELLIGENCE WORKSPACE</span>
           <h1>What can I help you with?</h1>
           <p>Explore ideas, understand concepts, solve problems and write better code.</p>
-          <div className="ac-suggestions">{SUGGESTIONS.map(([title, prompt]) => <button key={title} type="button" onClick={() => update(prompt)}>
+          <div className="ac-suggestions">{SUGGESTIONS.map(([title, prompt]) => <button key={title} type="button" disabled={guest} onClick={() => update(prompt)}>
             <strong>{title}</strong><span>{prompt}</span>
           </button>)}</div>
         </div>}
@@ -146,16 +146,16 @@ export default function Conversation() {
         {pending && <article className="ac-turn"><div className="ac-user"><span>You</span><p>{pending}</p></div><div className="ac-loading" role="status"><LoaderCircle size={18}/> Generating response…</div></article>}
       </div>
       <form className="ac-composer" onSubmit={event => { event.preventDefault(); void send(); }}>
-        <textarea aria-label="Message Aegis" placeholder="Ask Aegis anything non-private…" value={draft} maxLength={4000} rows={3} disabled={busy} onChange={event => update(event.target.value)} onKeyDown={event => {
+        <textarea aria-label="Message Aegis" placeholder={guest ? "Sign in as Owner to use AI" : "Ask Aegis anything non-private…"} value={draft} maxLength={4000} rows={3} disabled={busy || guest} onChange={event => update(event.target.value)} onKeyDown={event => {
           if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); }
         }}/>
         <div className="ac-privacy-bar">
-          <span>Gemini cloud AI · Send only non-private content</span>
+          <span>{guest ? "AI access requires Owner Login" : "Gemini cloud AI · Send only non-private content"}</span>
           <label>
             <input
               type="checkbox"
               checked={include}
-              disabled={busy}
+              disabled={busy || guest}
               onChange={event => setInclude(event.target.checked)}
             />
             Include recent context

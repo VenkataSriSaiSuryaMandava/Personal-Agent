@@ -1,6 +1,7 @@
+import { backendOrigin } from "./backend-origin";
 import { NextResponse } from "next/server";
 
-const BACKEND_URL = "http://127.0.0.1:8000";
+const BACKEND_URL = backendOrigin();
 
 const LOCAL_ORIGINS = new Set([
   "http://127.0.0.1:3000",
