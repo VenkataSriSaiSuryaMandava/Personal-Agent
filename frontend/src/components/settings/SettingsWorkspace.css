@@ -365,3 +365,256 @@
     margin-left: 30px;
   }
 }
+
+/* Checkpoint 1.4: authenticated security controls */
+
+.as-security-control {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+}
+
+.as-security-control .as-row {
+  border-bottom: 0;
+}
+
+.as-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--hover);
+  padding: 16px;
+}
+
+.as-confirmation p {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.as-confirmation .as-actions {
+  justify-content: flex-start;
+}
+
+.as-security-control button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.as-security-control button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Checkpoint 1.4B: interactive security switch cards */
+
+.as-control-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+  padding: 20px;
+  transition: border-color 180ms ease,
+              background-color 180ms ease;
+}
+
+.as-control-card:hover {
+  border-color: var(--accent);
+}
+
+.as-control-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+}
+
+.as-control-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.as-control-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.as-control-heading h3 {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.as-control-copy p,
+.as-control-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.as-state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.as-state-dot {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.as-state-pill[data-active="true"] {
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.as-state-pill[data-active="true"] .as-state-dot {
+  background: #22c55e;
+}
+
+.as-state-pill[data-emergency="true"][data-active="true"] {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.as-state-pill[data-emergency="true"][data-active="true"]
+.as-state-dot {
+  background: #ef4444;
+}
+
+.as-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 30px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #475569;
+  cursor: pointer;
+  transition: background-color 180ms ease,
+              border-color 180ms ease;
+}
+
+.as-toggle[data-on="true"] {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.as-toggle[data-on="true"][data-emergency="true"] {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.as-toggle-thumb {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transform: translateX(0);
+  transition: transform 180ms ease;
+}
+
+.as-toggle[data-on="true"] .as-toggle-thumb {
+  transform: translateX(22px);
+}
+
+.as-toggle:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.as-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.as-control-hint {
+  margin-top: 12px;
+}
+
+.as-control-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--hover);
+}
+
+.as-confirm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.as-confirm-header strong {
+  font-size: 14px;
+}
+
+.as-confirm-header span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.as-control-confirm p {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.as-control-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .as-control-card {
+    padding: 15px;
+  }
+
+  .as-control-main {
+    gap: 12px;
+  }
+
+  .as-control-heading {
+    gap: 8px;
+  }
+
+  .as-control-actions {
+    justify-content: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .as-toggle,
+  .as-toggle-thumb,
+  .as-control-card {
+    transition: none;
+  }
+}

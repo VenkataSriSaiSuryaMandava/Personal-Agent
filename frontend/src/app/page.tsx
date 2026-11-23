@@ -35,6 +35,7 @@ import {
   resetSettings,
   updateSettings,
   type GeneralPreferences,
+  type SecurityPreferences,
   type SettingsSnapshot,
 } from "@/lib/settings";
 
@@ -232,7 +233,7 @@ function Dashboard() {
   }
 
   async function save(
-    changes: Partial<GeneralPreferences>
+    changes: Partial<GeneralPreferences & SecurityPreferences>
   ) {
     if (!snapshot) return false;
 

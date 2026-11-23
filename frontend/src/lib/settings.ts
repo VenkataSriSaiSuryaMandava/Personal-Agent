@@ -16,6 +16,11 @@ export type GeneralPreferences = {
   response_style: ResponseStyle;
 };
 
+export type SecurityPreferences = {
+  cloud_enabled: boolean;
+  emergency_stop: boolean;
+};
+
 export type ApplicationSettings = GeneralPreferences & {
   primary_provider: "gemini" | "groq";
   fallback_provider: "gemini" | "groq";
@@ -147,7 +152,7 @@ export async function getSettings() {
 }
 
 export async function updateSettings(
-  changes: Partial<GeneralPreferences>,
+  changes: Partial<GeneralPreferences & SecurityPreferences>,
   revision: number
 ) {
   return validateSnapshot(
