@@ -1,0 +1,83 @@
+FROM node:24-bookworm-slim AS frontend-build
+
+WORKDIR /build/frontend
+
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    AEGIS_PRIVATE_DOCKER_BUILD=1
+
+COPY frontend/package.json frontend/package-lock.json ./
+
+RUN npm ci
+
+COPY frontend/ ./
+
+RUN mkdir -p public && npm run build
+
+
+FROM node:24-bookworm-slim AS frontend
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME=0.0.0.0 \
+    PORT=3000 \
+    AEGIS_LOCAL_BACKEND=1 \
+    AEGIS_PUBLIC_DEMO=0 \
+    AEGIS_INTERNAL_BACKEND_URL=http://backend:8000
+
+WORKDIR /app
+
+COPY --from=frontend-build --chown=node:node \
+    /build/frontend/.next/standalone ./
+
+COPY --from=frontend-build --chown=node:node \
+    /build/frontend/.next/static ./.next/static
+
+COPY --from=frontend-build --chown=node:node \
+    /build/frontend/public ./public
+
+USER node
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
+
+
+FROM python:3.12-slim-bookworm AS backend
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HOME=/home/aegis \
+    AEGIS_PUBLIC_DEMO=0 \
+    AEGIS_DEMO_MODE=0
+
+RUN useradd \
+    --create-home \
+    --uid 10001 \
+    --shell /usr/sbin/nologin \
+    aegis
+
+WORKDIR /app
+
+COPY backend/pyproject.toml ./backend/pyproject.toml
+COPY backend/aegis ./backend/aegis
+
+RUN python -m pip install --no-cache-dir ./backend
+
+RUN mkdir -p \
+    "/home/aegis/Library/Application Support/AegisAI" \
+    && chown -R aegis:aegis /home/aegis \
+    && chmod 700 \
+    "/home/aegis/Library/Application Support/AegisAI"
+
+USER aegis
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s \
+    --start-period=15s --retries=3 \
+    CMD python -c \
+    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+
+CMD ["python", "-m", "uvicorn", "aegis.main:app", \
+     "--host", "0.0.0.0", "--port", "8000", \
+     "--workers", "1"]

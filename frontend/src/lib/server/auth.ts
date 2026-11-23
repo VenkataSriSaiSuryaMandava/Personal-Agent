@@ -1,3 +1,4 @@
+import { backendOrigin } from "./backend-origin";
 import { NextRequest, NextResponse } from "next/server";
 import { rejectRequest } from "./backend";
 
@@ -5,7 +6,7 @@ export const SESSION_COOKIE = "aegis_session";
 
 const SESSION_DURATION = 43200;
 
-const BACKEND_URL = "http://127.0.0.1:8000";
+const BACKEND_URL = backendOrigin();
 
 const AUTH_HEADERS = {
   "Cache-Control": "no-store",

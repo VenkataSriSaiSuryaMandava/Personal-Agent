@@ -1,3 +1,4 @@
+import { backendOrigin } from "./backend-origin";
 import type { NextRequest } from "next/server";
 
 import {
@@ -8,7 +9,7 @@ import {
   requireSession,
 } from "./auth";
 
-const BACKEND = "http://127.0.0.1:8000/api/v1/settings";
+const BACKEND = backendOrigin() + "/api/v1/settings";
 const MAX_BODY = 4096;
 
 type Operation =

@@ -40,6 +40,24 @@ import {
   type SettingsSnapshot,
 } from "@/lib/settings";
 
+const GUEST_SETTINGS: SettingsSnapshot = {
+  settings: {
+    theme: "dark",
+    startup_workspace: "overview",
+    response_style: "balanced",
+    primary_provider: "gemini",
+    fallback_provider: "groq",
+    fallback_enabled: false,
+    cloud_enabled: false,
+    retain_conversations: false,
+    emergency_stop: false,
+  },
+  revision: 1,
+  updated_at: 0,
+  editable_fields: [],
+  security_enforcement_active: true,
+};
+
 function subscribeColorScheme(callback: () => void) {
   const media = window.matchMedia(
     "(prefers-color-scheme: dark)"
@@ -68,13 +86,13 @@ export default function Home() {
   }
 
   return (
-    <AuthGate>
+    <AuthGate guestContent={<Dashboard guest />}>
       <Dashboard />
     </AuthGate>
   );
 }
 
-function Dashboard() {
+function Dashboard({ guest = false }: { guest?: boolean }) {
   const [active, setActive] =
     useState<Workspace>("overview");
 
@@ -85,7 +103,8 @@ function Dashboard() {
     useState<SettingsSnapshot | null>(null);
 
   const [collapsed, setCollapsed] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!guest);
+  const [guestDark, setGuestDark] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
@@ -100,15 +119,19 @@ function Dashboard() {
 
   const theme = snapshot?.settings.theme ?? "dark";
 
-  const dark = theme === "system"
-    ? systemDark
-    : theme === "dark";
+  const dark = guest
+    ? guestDark
+    : theme === "system"
+      ? systemDark
+      : theme === "dark";
 
   const current = navigation.find(
     item => item.id === active
   )!;
 
   useEffect(() => {
+    if (guest) return;
+
     let mounted = true;
 
     getSettings()
@@ -150,7 +173,7 @@ function Dashboard() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [guest]);
 
   useEffect(() => {
     function restoreLocation() {
@@ -284,10 +307,15 @@ function Dashboard() {
           <Header
             title={current.label}
             dark={dark}
-            themeDisabled={!snapshot || loading || busy}
-            onToggleTheme={() => void save({
-              theme: dark ? "light" : "dark",
-            })}
+            guest={guest}
+            themeDisabled={loading || busy || (!guest && !snapshot)}
+            onToggleTheme={() => {
+              if (guest) {
+                setGuestDark(value => !value);
+                return;
+              }
+              void save({ theme: dark ? "light" : "dark" });
+            }}
           />
         </div>
 
@@ -320,7 +348,7 @@ function Dashboard() {
           ) : (
             <>
               <div hidden={active !== "chat"}>
-                <Conversation />
+                <Conversation guest={guest} />
               </div>
 
               {active === "overview" && (
@@ -339,8 +367,12 @@ function Dashboard() {
                   <div className="stats-grid">
                     <StatusCard
                       title="AI provider"
-                      value="Gemini"
-                      description="Gemini conversational AI"
+                      value={guest ? "Disabled" : "Gemini"}
+                      description={
+                        guest
+                          ? "Sign in as Owner to use AI"
+                          : "Gemini conversational AI"
+                      }
                     />
                     <StatusCard
                       title="Task engine"
@@ -392,7 +424,27 @@ function Dashboard() {
                     </div>
 
                     <div className="right-column">
-                      <SystemStatus/>
+                      {guest ? (
+                        <section className="panel">
+                          <div className="panel-heading">
+                            <h2>System status</h2>
+                          </div>
+                          <div className="service-row">
+                            Workspace <small>Guest preview</small>
+                          </div>
+                          <div className="service-row">
+                            AI provider <small>Disabled</small>
+                          </div>
+                          <div className="service-row">
+                            Private data <small>No access</small>
+                          </div>
+                          <div className="service-row">
+                            Execution <small>Disabled</small>
+                          </div>
+                        </section>
+                      ) : (
+                        <SystemStatus />
+                      )}
                       <Approvals
                         onOpen={() => navigate("approvals")}
                       />
@@ -402,7 +454,18 @@ function Dashboard() {
               )}
 
               {active === "settings" && (
-                snapshot ? (
+                guest ? (
+                  <SettingsWorkspace
+                    guest
+                    section={settingsSection}
+                    onSectionChange={navigateSettings}
+                    snapshot={GUEST_SETTINGS}
+                    busy={false}
+                    onSave={async () => false}
+                    onReset={async () => false}
+                    onReload={async () => false}
+                  />
+                ) : snapshot ? (
                   <SettingsWorkspace
                     section={settingsSection}
                     onSectionChange={navigateSettings}
