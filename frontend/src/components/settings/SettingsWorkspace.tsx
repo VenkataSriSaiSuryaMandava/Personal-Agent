@@ -1,0 +1,763 @@
+"use client";
+
+import {
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  Activity,
+  Brain,
+  Database,
+  Info,
+  Lock,
+  Monitor,
+  Moon,
+  RefreshCw,
+  Save,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sun,
+  RotateCcw,
+} from "lucide-react";
+
+import {
+  getAudit,
+  getProviders,
+  getStorage,
+  type AuditResponse,
+  type GeneralPreferences,
+  type ProvidersResponse,
+  type SettingsSnapshot,
+  type StorageResponse,
+  type StartupWorkspace,
+  type ResponseStyle,
+} from "@/lib/settings";
+
+import type {
+  SettingsSection,
+} from "@/lib/workspace-location";
+
+import "./SettingsWorkspace.css";
+
+const SECTIONS = [
+  { id: "general", title: "General", icon: SlidersHorizontal },
+  { id: "ai", title: "AI & Models", icon: Brain },
+  { id: "security", title: "Security", icon: ShieldCheck },
+  { id: "privacy", title: "Privacy", icon: Lock },
+  { id: "storage", title: "Storage", icon: Database },
+  { id: "audit", title: "Audit log", icon: Activity },
+] as const;
+
+
+
+type Props = {
+  section: SettingsSection;
+  onSectionChange: (section: SettingsSection) => void;
+  snapshot: SettingsSnapshot;
+  busy: boolean;
+  onSave: (
+    changes: Partial<GeneralPreferences>
+  ) => Promise<boolean>;
+  onReset: () => Promise<boolean>;
+  onReload: () => Promise<boolean>;
+};
+
+function SettingRow({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="as-row">
+      <div>
+        <strong>{title}</strong>
+        {description && <p>{description}</p>}
+      </div>
+      <div className="as-row-value">{children}</div>
+    </div>
+  );
+}
+
+function Status({
+  children,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "good" | "warning";
+}) {
+  return (
+    <span className="as-status" data-tone={tone}>
+      {children}
+    </span>
+  );
+}
+
+function Notice({ children }: { children: ReactNode }) {
+  return (
+    <div className="as-notice">
+      <Info size={17} />
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function formatTime(seconds: number) {
+  return new Date(seconds * 1000).toLocaleString();
+}
+
+function GeneralSettings({
+  snapshot,
+  busy,
+  onSave,
+  onReset,
+}: Props) {
+  const saved = snapshot.settings;
+
+  const [draft, setDraft] = useState<GeneralPreferences>({
+    theme: saved.theme,
+    startup_workspace: saved.startup_workspace,
+    response_style: saved.response_style,
+  });
+
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const dirty =
+    draft.theme !== saved.theme ||
+    draft.startup_workspace !== saved.startup_workspace ||
+    draft.response_style !== saved.response_style;
+
+  const editable = (field: string) =>
+    snapshot.editable_fields.includes(field);
+
+  const appearanceOptions = [
+    { value: "dark", label: "Dark", icon: Moon },
+    { value: "light", label: "Light", icon: Sun },
+    { value: "system", label: "System", icon: Monitor },
+  ] as const;
+
+  return (
+    <section className="panel as-panel">
+      <h2>General preferences</h2>
+      <p className="as-description">
+        Personalize your workspace. Changes are stored locally.
+      </p>
+
+      <div className="as-field">
+        <strong>Appearance</strong>
+        <p>Choose your preferred interface theme.</p>
+
+        <div className="as-theme-grid">
+          {appearanceOptions.map(option => (
+            <button
+              key={option.value}
+              type="button"
+              disabled={busy || !editable("theme")}
+              aria-pressed={draft.theme === option.value}
+              className="as-theme-option"
+              data-selected={draft.theme === option.value}
+              onClick={() => setDraft(previous => ({
+                ...previous,
+                theme: option.value,
+              }))}
+            >
+              <option.icon size={23} />
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="as-field">
+        <label htmlFor="aegis-startup">
+          Startup workspace
+        </label>
+        <p>Choose which page opens after signing in.</p>
+
+        <select
+          id="aegis-startup"
+          value={draft.startup_workspace}
+          disabled={busy || !editable("startup_workspace")}
+          onChange={event => setDraft(previous => ({
+            ...previous,
+            startup_workspace:
+              event.target.value as StartupWorkspace,
+          }))}
+        >
+          <option value="overview">Overview</option>
+          <option value="chat">AI Assistant</option>
+          <option value="settings">Settings</option>
+        </select>
+      </div>
+
+      <div className="as-field">
+        <label htmlFor="aegis-response-style">
+          Response style
+        </label>
+        <p>
+          Saved preference. AI response behavior will be
+          connected in a later checkpoint.
+        </p>
+
+        <select
+          id="aegis-response-style"
+          value={draft.response_style}
+          disabled={busy || !editable("response_style")}
+          onChange={event => setDraft(previous => ({
+            ...previous,
+            response_style:
+              event.target.value as ResponseStyle,
+          }))}
+        >
+          <option value="balanced">Balanced</option>
+          <option value="concise">Concise</option>
+          <option value="detailed">Detailed</option>
+        </select>
+      </div>
+
+      {confirmReset && (
+        <Notice>
+          Reset general preferences to their defaults?
+          Security and provider preferences will not change.
+        </Notice>
+      )}
+
+      <div className="as-actions">
+        <span className="as-muted">
+          {dirty ? "Unsaved changes" : "All changes saved"}
+        </span>
+
+        {confirmReset ? (
+          <>
+            <button
+              className="secondary-button"
+              disabled={busy}
+              onClick={() => setConfirmReset(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="secondary-button"
+              disabled={busy}
+              onClick={async () => {
+                if (await onReset()) {
+                  setConfirmReset(false);
+                }
+              }}
+            >
+              Confirm reset
+            </button>
+          </>
+        ) : (
+          <button
+            className="secondary-button"
+            disabled={busy}
+            onClick={() => setConfirmReset(true)}
+          >
+            <RotateCcw size={15} /> Reset
+          </button>
+        )}
+
+        <button
+          className="as-primary"
+          disabled={busy || !dirty}
+          onClick={() => {
+            const changes: Partial<GeneralPreferences> = {};
+
+            if (draft.theme !== saved.theme) {
+              changes.theme = draft.theme;
+            }
+
+            if (draft.startup_workspace !==
+                saved.startup_workspace) {
+              changes.startup_workspace =
+                draft.startup_workspace;
+            }
+
+            if (draft.response_style !== saved.response_style) {
+              changes.response_style = draft.response_style;
+            }
+
+            void onSave(changes);
+          }}
+        >
+          <Save size={15} />
+          {busy ? "Working…" : "Save changes"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function ProviderSettings({
+  snapshot,
+  providers,
+}: {
+  snapshot: SettingsSnapshot;
+  providers: ProvidersResponse | null;
+}) {
+  return (
+    <section className="panel as-panel">
+      <h2>AI providers</h2>
+      <p className="as-description">
+        Manage provider availability and model preferences.
+      </p>
+
+      <Notice>
+        Credentials stay on the backend. Configuration status
+        does not verify API availability or remaining quota.
+      </Notice>
+
+      {!providers ? (
+        <p className="as-muted">
+          Provider diagnostics unavailable or loading.
+        </p>
+      ) : (
+        <div className="as-provider-grid">
+          {providers.providers.map(provider => (
+            <article className="as-provider" key={provider.provider}>
+              <div className="as-provider-heading">
+                <Brain size={23} />
+                <h3>
+                  {provider.provider === "gemini" ? "Gemini" : "Groq"}
+                </h3>
+              </div>
+
+              <Status
+                tone={
+                  provider.status === "configured"
+                  ? "good"
+                  : "neutral"
+                }
+              >
+                {provider.status.replaceAll("_", " ")}
+              </Status>
+
+              <SettingRow title="Credential configured">
+                {provider.configured ? "Yes" : "No"}
+              </SettingRow>
+              <SettingRow title="Model">
+                {provider.model ?? "Not available"}
+              </SettingRow>
+              <SettingRow title="Connection tested">
+                {provider.live_verified ? "Yes" : "No"}
+              </SettingRow>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <SettingRow
+        title="Preferred primary provider"
+        description="Stored preference"
+      >
+        {snapshot.settings.primary_provider}
+      </SettingRow>
+
+      <SettingRow
+        title="Preferred fallback provider"
+        description="Provider routing is not implemented yet."
+      >
+        {snapshot.settings.fallback_provider}
+      </SettingRow>
+
+      <SettingRow
+        title="Automatic fallback"
+        description="Available after the multi-provider checkpoint."
+      >
+        <Status>Not implemented</Status>
+      </SettingRow>
+    </section>
+  );
+}
+
+function SecuritySettings({
+  snapshot,
+}: {
+  snapshot: SettingsSnapshot;
+}) {
+  return (
+    <section className="panel as-panel">
+      <h2>Security controls</h2>
+
+      <p className="as-description">
+        Authentication and application security.
+      </p>
+
+      <Notice>
+        Database-controlled security enforcement is not active
+        yet. These preferences are read-only until the
+        security implementation is connected.
+      </Notice>
+
+      <SettingRow
+        title="Owner authentication"
+        description="Authenticated private workspace"
+      >
+        <Status tone="good">Required</Status>
+      </SettingRow>
+
+      <SettingRow
+        title="Emergency stop"
+        description="Stored preference, not current runtime status"
+      >
+        <Status>
+          {snapshot.settings.emergency_stop
+            ? "Enabled preference"
+            : "Disabled preference"}
+        </Status>
+      </SettingRow>
+
+      <SettingRow
+        title="Session management"
+        description="Logout is available in the owner toolbar."
+      >
+        <Status>Additional controls planned</Status>
+      </SettingRow>
+
+      <SettingRow
+        title="Permissions and approvals"
+        description="Scoped access for future tools and integrations"
+      >
+        <Status>Pending implementation</Status>
+      </SettingRow>
+
+      <SettingRow title="Autonomous actions">
+        <Status>Not available</Status>
+      </SettingRow>
+    </section>
+  );
+}
+
+function PrivacySettings({
+  snapshot,
+}: {
+  snapshot: SettingsSnapshot;
+}) {
+  return (
+    <section className="panel as-panel">
+      <h2>Privacy and data</h2>
+
+      <p className="as-description">
+        Understand where your information is stored and sent.
+      </p>
+
+      <Notice>
+        Only send non-private content to the cloud assistant.
+        Automatic sensitive-content checks cannot detect every
+        form of private information.
+      </Notice>
+
+      <SettingRow
+        title="Cloud AI preference"
+        description="Runtime access currently depends on server configuration."
+      >
+        <Status>
+          {snapshot.settings.cloud_enabled ? "On" : "Off"}
+          {" · stored only"}
+        </Status>
+      </SettingRow>
+
+      <SettingRow
+        title="Conversation retention"
+        description="Persistent conversation history is not implemented."
+      >
+        <Status>Not available</Status>
+      </SettingRow>
+
+      <SettingRow
+        title="Private account data"
+        description="Not authorized for cloud AI transmission."
+      >
+        <Status>Local-only policy</Status>
+      </SettingRow>
+
+      <SettingRow
+        title="Public demo"
+        description="Isolated recorded examples without owner credentials."
+      >
+        <Status tone="good">Isolated</Status>
+      </SettingRow>
+    </section>
+  );
+}
+
+function StorageSettings({
+  storage,
+}: {
+  storage: StorageResponse | null;
+}) {
+  return (
+    <section className="panel as-panel">
+      <h2>Local storage</h2>
+
+      <p className="as-description">
+        Database health and persistence information.
+      </p>
+
+      {!storage ? (
+        <p className="as-muted">
+          Storage diagnostics unavailable or loading.
+        </p>
+      ) : (
+        <>
+          <SettingRow title="Database engine">
+            SQLite
+          </SettingRow>
+
+          <SettingRow title="Schema version">
+            v{storage.schema_version}
+          </SettingRow>
+
+          <SettingRow title="Expected schema">
+            v{storage.expected_schema_version}
+          </SettingRow>
+
+          <SettingRow title="Integrity check">
+            <Status
+              tone={storage.integrity === "ok" ? "good" : "warning"}
+            >
+              {storage.integrity === "ok" ? "Healthy" : "Failed"}
+            </Status>
+          </SettingRow>
+
+          <SettingRow title="Storage location">
+            {storage.local_only ? "Local device" : "Unknown"}
+          </SettingRow>
+
+          <SettingRow title="Application-level encryption">
+            {storage.encrypted_by_application ? "Enabled" : "Not enabled"}
+          </SettingRow>
+        </>
+      )}
+
+      <Notice>
+        Database files use restrictive filesystem permissions.
+        That is not the same as encryption. Backup and restore
+        controls currently remain available through the
+        terminal workflow.
+      </Notice>
+    </section>
+  );
+}
+
+export default function SettingsWorkspace(props: Props) {
+  const {
+    snapshot,
+    busy,
+    section,
+    onSectionChange,
+  } = props;
+
+  const [providers, setProviders] =
+    useState<ProvidersResponse | null>(null);
+
+  const [storage, setStorage] =
+    useState<StorageResponse | null>(null);
+
+  const [audit, setAudit] =
+    useState<AuditResponse | null>(null);
+
+  const [refresh, setRefresh] = useState(0);
+
+  const [diagnosticError, setDiagnosticError] = useState("");
+
+  const [auditBusy, setAuditBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.allSettled([
+      getProviders(),
+      getStorage(),
+      getAudit(),
+    ]).then(result => {
+      if (!active) return;
+
+      setProviders(
+        result[0].status === "fulfilled"
+          ? result[0].value : null
+      );
+
+      setStorage(
+        result[1].status === "fulfilled"
+          ? result[1].value : null
+      );
+
+      setAudit(
+        result[2].status === "fulfilled"
+          ? result[2].value : null
+      );
+
+      setDiagnosticError(
+        result.some(item => item.status === "rejected")
+          ? "Some diagnostics could not be loaded."
+          : ""
+      );
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [snapshot.revision, refresh]);
+
+  async function loadOlder() {
+    if (!audit?.next_before_id || auditBusy) return;
+
+    setAuditBusy(true);
+
+    try {
+      const older = await getAudit(audit.next_before_id);
+
+      setAudit(previous => previous ? ({
+        events: [...previous.events, ...older.events],
+        next_before_id: older.next_before_id,
+      }) : older);
+    } catch {
+      setDiagnosticError("Unable to load older activity.");
+    } finally {
+      setAuditBusy(false);
+    }
+  }
+
+  return (
+    <div className="as-workspace">
+      <div className="page-heading">
+        <div className="eyebrow">CONTROL CENTER</div>
+        <h1>Settings</h1>
+        <p>
+          Manage your preferences, providers and local workspace.
+        </p>
+      </div>
+
+      <div className="as-layout">
+        <nav className="panel as-navigation"
+          aria-label="Settings sections"
+        >
+          {SECTIONS.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              disabled={busy}
+              data-active={section === item.id}
+              aria-current={
+                section === item.id ? "page" : undefined
+              }
+              onClick={() => onSectionChange(item.id)}
+            >
+              <item.icon size={18} />
+              <span>{item.title}</span>
+            </button>
+          ))}
+
+          <div className="as-revision">
+            Local revision {snapshot.revision}
+          </div>
+        </nav>
+
+        <div className="as-content">
+          <div className="as-content-toolbar">
+            <span className="as-muted">
+              Last saved: {formatTime(snapshot.updated_at)}
+            </span>
+
+            <button
+              className="secondary-button"
+              disabled={busy || auditBusy}
+              onClick={async () => {
+                if (await props.onReload()) {
+                  setRefresh(value => value + 1);
+                }
+              }}
+            >
+              <RefreshCw size={14} />
+              Reload settings
+            </button>
+          </div>
+
+          {diagnosticError && (
+            <p className="as-error" role="alert">
+              {diagnosticError}
+            </p>
+          )}
+
+          <div hidden={section !== "general"}>
+            <GeneralSettings key={snapshot.revision} {...props} />
+          </div>
+
+          {section === "ai" && (
+            <ProviderSettings
+              snapshot={snapshot}
+              providers={providers}
+            />
+          )}
+
+          {section === "security" && (
+            <SecuritySettings snapshot={snapshot} />
+          )}
+
+          {section === "privacy" && (
+            <PrivacySettings snapshot={snapshot} />
+          )}
+
+          {section === "storage" && (
+            <StorageSettings storage={storage} />
+          )}
+
+          {section === "audit" && (
+            <section className="panel as-panel">
+              <h2>Security activity</h2>
+
+              <p className="as-description">
+                Metadata-only settings events. Messages,
+                API keys and passwords are not included.
+              </p>
+
+              {!audit ? (
+                <p className="as-muted">
+                  Activity unavailable or loading.
+                </p>
+              ) : audit.events.length === 0 ? (
+                <Notice>No settings activity recorded yet.</Notice>
+              ) : (
+                <div className="as-audit-list">
+                  {audit.events.map(event => (
+                    <article key={event.id}>
+                      <Activity size={18} />
+                      <div>
+                        <strong>
+                          {event.event_type.replaceAll(".", " ")
+                            .replaceAll("_", " ")}
+                        </strong>
+                        <p>
+                          Revision {event.settings_revision}
+                        </p>
+                      </div>
+                      <time>{formatTime(event.created_at)}</time>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              {audit?.next_before_id && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={auditBusy || busy}
+                  onClick={() => void loadOlder()}
+                >
+                  {auditBusy ? "Loading…" : "Load older events"}
+                </button>
+              )}
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
