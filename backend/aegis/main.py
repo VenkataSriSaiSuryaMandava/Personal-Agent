@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from aegis.api import auth, conversation, conversation_history
+from aegis.api import workspaces
 from aegis.api import settings as settings_api
 from aegis.api import chat, health, inference
 from aegis.config import settings
@@ -52,3 +53,5 @@ app.include_router(conversation.router)
 app.include_router(settings_api.router)
 
 app.include_router(conversation_history.router)
+
+app.include_router(workspaces.router)

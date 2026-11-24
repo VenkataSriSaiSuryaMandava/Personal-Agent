@@ -1,0 +1,202 @@
+.fw-workspace {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.fw-workspace .page-heading {
+  margin-bottom: 0;
+}
+
+.fw-workspace .notice {
+  margin: 0;
+}
+
+.fw-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.fw-controls input {
+  flex: 1;
+  min-width: 140px;
+}
+
+.fw-workspace input,
+.fw-workspace select,
+.fw-workspace textarea {
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  max-width: 100%;
+}
+
+.fw-form {
+  display: grid;
+  gap: 16px;
+}
+
+.fw-form h2,
+.fw-list-heading h2 {
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.fw-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.fw-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.fw-form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.fw-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fw-primary {
+  color: white;
+  background: #2563eb;
+}
+
+.fw-list-heading,
+.fw-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fw-records {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fw-record {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fw-record h3 {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.fw-record p {
+  overflow-wrap: anywhere;
+}
+
+.fw-status {
+  background: var(--hover);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 11px;
+  padding: 5px 9px;
+  flex-shrink: 0;
+}
+
+.fw-notes {
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.fw-reference {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.fw-record .fw-actions .muted {
+  margin-right: auto;
+}
+
+.fw-delete {
+  color: #f87171;
+}
+
+[data-theme="light"] .fw-delete {
+  color: #b91c1c;
+}
+
+.fw-empty {
+  padding: 36px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.fw-empty h3 {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.fw-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fw-summary-grid button {
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 9px;
+}
+
+.fw-summary-grid button:hover {
+  border-color: var(--accent);
+}
+
+.fw-summary-grid strong {
+  display: block;
+  font-size: 22px;
+  margin-top: 6px;
+}
+
+@media (max-width: 950px) {
+  .fw-records {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .fw-fields,
+  .fw-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fw-controls input,
+  .fw-controls select {
+    width: 100%;
+  }
+
+  .fw-record-head {
+    flex-wrap: wrap;
+  }
+}

@@ -10,7 +10,7 @@ from aegis.storage.database import (
 from aegis.storage.settings import ApplicationSettings
 
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 def initialize_database(
@@ -223,3 +223,39 @@ def initialize_database(
             connection.execute(
                 "PRAGMA user_version = 4"
             )
+
+
+            version = 4
+
+        if version == 4:
+
+            connection.execute("""
+                CREATE TABLE workspace_records (
+                    id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    workspace TEXT NOT NULL CHECK (
+                        workspace IN (
+                            'tasks', 'jobs', 'email',
+                            'calendar', 'research', 'coding',
+                            'browser', 'memory', 'approvals'
+                        )
+                    ),
+                    payload TEXT NOT NULL,
+                    revision INTEGER NOT NULL DEFAULT 1
+                        CHECK (revision >= 1),
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_workspace_records_owner
+                ON workspace_records(
+                    user_id, workspace, updated_at DESC
+                )
+            """)
+
+            connection.execute("PRAGMA user_version = 5")

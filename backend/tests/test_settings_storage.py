@@ -38,7 +38,7 @@ def test_schema_version(settings_database):
 
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 4
+        ).fetchone()[0] == 5
 
 
 def test_default_settings(settings_database):
@@ -291,6 +291,7 @@ def test_migration_from_version_two_preserves_owner(
 
     with connect(settings_database) as connection:
 
+        connection.execute("DROP TABLE workspace_records")
         connection.execute("DROP TABLE conversation_turns")
         connection.execute("DROP TABLE conversations")
         connection.execute("DROP TABLE security_audit_events")
