@@ -309,3 +309,74 @@ def delete_record(
         ))
 
     return {"deleted": True}
+
+
+def workspace_summary(
+    user_id: int,
+    path: Path = DATABASE_PATH,
+):
+    totals = {
+        workspace: 0 for workspace in STATUSES
+    }
+
+    statuses = {
+        workspace: {
+            status: 0 for status in values
+        }
+        for workspace, values in STATUSES.items()
+    }
+
+    with connect(path) as connection:
+        connection.execute("BEGIN")
+
+        rows = connection.execute("""
+            SELECT workspace,
+                   json_extract(payload, '$.status') AS status,
+                   COUNT(*) AS total
+            FROM workspace_records
+            WHERE user_id = ?
+            GROUP BY workspace, status
+        """, (user_id,)).fetchall()
+
+        for row in rows:
+            workspace = row["workspace"]
+            status = row["status"]
+
+            if status not in statuses[workspace]:
+                raise ValueError("Invalid stored status")
+
+            totals[workspace] += row["total"]
+            statuses[workspace][status] = row["total"]
+
+        memory_bytes = connection.execute("""
+            SELECT COALESCE(
+                SUM(length(CAST(payload AS BLOB))), 0
+            )
+            FROM workspace_records
+            WHERE user_id = ?
+            AND workspace = 'memory'
+        """, (user_id,)).fetchone()[0]
+
+        conversations = connection.execute("""
+            SELECT COUNT(*)
+            FROM conversations
+            WHERE user_id = ?
+        """, (user_id,)).fetchone()[0]
+
+        page_count = connection.execute(
+            "PRAGMA page_count"
+        ).fetchone()[0]
+
+        page_size = connection.execute(
+            "PRAGMA page_size"
+        ).fetchone()[0]
+
+    return {
+        "counts": totals,
+        "statuses": statuses,
+        "storage": {
+            "memory_payload_bytes": memory_bytes,
+            "conversation_count": conversations,
+            "database_page_bytes": page_count * page_size,
+        },
+    }

@@ -240,6 +240,7 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   }, [snapshot?.settings.startup_workspace]);
 
   function navigate(workspace: Workspace) {
+    window.scrollTo({ top: 0, behavior: "instant" });
     clearNavigationNotice();
 
     const section =
@@ -257,6 +258,7 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   }
 
   function navigateSettings(section: SettingsSection) {
+    window.scrollTo({ top: 0, behavior: "instant" });
     clearNavigationNotice();
     setSettingsSection(section);
 
@@ -501,13 +503,13 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                     />
                     <StatusCard
                       title="Task engine"
-                      value="Off"
-                      description="Manual task tracking available"
+                      value="Manual"
+                      description="Tasks and deadlines"
                     />
                     <StatusCard
-                      title="File access"
-                      value="Off"
-                      description="Not connected"
+                      title="Integrations"
+                      value="Offline"
+                      description="External accounts not connected"
                     />
                     <StatusCard
                       title="Execution"
@@ -532,6 +534,8 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                           Ask Aegis →
                         </button>
                       </section>
+
+
 
                       <section className="panel ac-overview-card">
                         <h2>Control your workspace</h2>
@@ -628,6 +632,7 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                   key={active}
                   workspace={active}
                   guest={guest}
+                  onAssistant={() => navigate("chat")}
                 />
               )}
             </>

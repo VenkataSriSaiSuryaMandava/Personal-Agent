@@ -1,5 +1,8 @@
 "use client";
 
+import IntegrationPanel from "../workspaces/IntegrationPanel";
+import "../workspaces/WorkspaceExperience.css";
+
 import {
   useEffect,
   useState,
@@ -10,6 +13,7 @@ import {
   Activity,
   Brain,
   Database,
+  Globe,
   Info,
   Lock,
   Monitor,
@@ -45,13 +49,12 @@ import "./SettingsWorkspace.css";
 const SECTIONS = [
   { id: "general", title: "General", icon: SlidersHorizontal },
   { id: "ai", title: "AI & Models", icon: Brain },
+  { id: "integrations", title: "Integrations", icon: Globe },
   { id: "security", title: "Security", icon: ShieldCheck },
   { id: "privacy", title: "Privacy", icon: Lock },
   { id: "storage", title: "Storage", icon: Database },
   { id: "audit", title: "Audit log", icon: Activity },
 ] as const;
-
-
 
 type Props = {
   guest?: boolean;
@@ -303,10 +306,8 @@ function GeneralSettings({
 }
 
 function ProviderSettings({
-  snapshot,
   providers,
 }: {
-  snapshot: SettingsSnapshot;
   providers: ProvidersResponse | null;
 }) {
   return (
@@ -362,20 +363,6 @@ function ProviderSettings({
       )}
 
       <SettingRow
-        title="Stored primary provider"
-        description="Gemini is the only authorized runtime provider."
-      >
-        {snapshot.settings.primary_provider}
-      </SettingRow>
-
-      <SettingRow
-        title="Future fallback provider"
-        description="Secondary provider integration is deferred."
-      >
-        {snapshot.settings.fallback_provider}
-      </SettingRow>
-
-      <SettingRow
         title="Automatic fallback"
         description="No automatic transmission to another provider."
       >
@@ -386,7 +373,7 @@ function ProviderSettings({
 }
 
 type SecurityField =
-  "cloud_enabled" | "emergency_stop";
+  "cloud_enabled" | "emergency_stop" | "retain_conversations";
 
 function SecurityControl({
   title,
@@ -410,21 +397,34 @@ function SecurityControl({
   const [confirm, setConfirm] = useState(false);
 
   const isEmergency = field === "emergency_stop";
+  const isRetention = field === "retain_conversations";
   const nextValue = !enabled;
 
   const available = editable && enforced && !busy;
 
-  const stateLabel = isEmergency
-    ? enabled ? "Stop active" : "System ready"
-    : enabled ? "Cloud enabled" : "Cloud disabled";
+  const stateLabel = !enforced
+    ? "Unavailable"
+    : isEmergency
+      ? enabled ? "Stop active" : "Stop inactive"
+      : enabled ? "Enabled" : "Disabled";
+
+  const confirmationTitle = isEmergency
+    ? nextValue ? "Activate emergency stop" : "Deactivate emergency stop"
+    : isRetention
+      ? nextValue ? "Enable conversation history" : "Disable conversation history"
+      : nextValue ? "Enable cloud AI access" : "Disable cloud AI access";
 
   const warning = isEmergency
     ? nextValue
       ? "Activate emergency stop? New cloud requests will be blocked. Already transmitted requests cannot be recalled."
       : "Deactivate emergency stop? Cloud inference will still require separate authorization and server permission."
-    : nextValue
-      ? "Enable cloud AI? Approved public or synthetic content may be transmitted to an external provider. Never include private information."
-      : "Disable cloud AI? New external AI requests will be denied.";
+    : isRetention
+      ? nextValue
+        ? "Save future conversations locally? Existing saved history remains until deleted."
+        : "Stop saving new conversations? Previously saved history will remain available."
+      : nextValue
+        ? "Enable cloud AI? Approved public or synthetic content may be transmitted to an external provider. Never include private information."
+        : "Disable cloud AI? New external AI requests will be denied.";
 
   return (
     <div
@@ -460,7 +460,16 @@ function SecurityControl({
           className="as-toggle"
           data-on={enabled}
           data-emergency={isEmergency}
-          onClick={() => setConfirm(true)}
+          onClick={() => {
+            if (!available) return;
+
+            if (isRetention && !nextValue) {
+              void onSave({ retain_conversations: false });
+              return;
+            }
+
+            setConfirm(true);
+          }}
         >
           <span className="as-toggle-thumb" />
         </button>
@@ -468,8 +477,9 @@ function SecurityControl({
 
       {!enforced && (
         <p className="as-control-hint">
-          Runtime enforcement is unavailable.
-          This control cannot be changed.
+          {isRetention
+            ? "Saved history requires Owner access."
+            : "Runtime enforcement is unavailable. This control cannot be changed."}
         </p>
       )}
 
@@ -481,13 +491,7 @@ function SecurityControl({
         >
           <div className="as-confirm-header">
             <strong>
-              {isEmergency
-                ? nextValue
-                  ? "Activate emergency stop"
-                  : "Deactivate emergency stop"
-                : nextValue
-                  ? "Enable cloud AI access"
-                  : "Disable cloud AI access"}
+              {confirmationTitle}
             </strong>
             <span>Confirmation required</span>
           </div>
@@ -528,6 +532,7 @@ function SecurityControl({
 }
 
 function SecuritySettings({
+  guest,
   snapshot,
   busy,
   onSave,
@@ -557,7 +562,9 @@ function SecuritySettings({
         title="Owner authentication"
         description="Required to access your private workspace."
       >
-        <Status tone="good">Protected</Status>
+        <Status tone={guest ? "neutral" : "good"}>
+          {guest ? "Owner required" : "Protected"}
+        </Status>
       </SettingRow>
 
       <SettingRow
@@ -585,7 +592,7 @@ function PrivacySettings({
     <section className="panel as-panel">
       <h2>Privacy</h2>
       <p className="as-description">
-        Control access to external AI providers.
+        Manage cloud authorization and local conversation retention.
       </p>
 
       <SecurityControl
@@ -602,50 +609,25 @@ function PrivacySettings({
         onSave={onSave}
       />
 
+      <SecurityControl
+        key={"history-" + snapshot.revision}
+        field="retain_conversations"
+        title="Conversation history"
+        description="Save completed conversations to your private local database."
+        enabled={snapshot.settings.retain_conversations}
+        busy={busy}
+        editable={!guest && snapshot.editable_fields.includes(
+          "retain_conversations"
+        )}
+        enforced={!guest}
+        onSave={onSave}
+      />
+
       <Notice>
         Private and sensitive data remain blocked from cloud AI.
         Content checks are not perfect, so review every request.
         Emergency stop is managed in Security.
       </Notice>
-
-      <SettingRow
-        title="Conversation history"
-        description="Save completed conversations to the private SQLite database on this device."
-      >
-        <button
-          type="button"
-          role="switch"
-          aria-label="Conversation history"
-          aria-checked={snapshot.settings.retain_conversations}
-          className="as-toggle"
-          data-on={snapshot.settings.retain_conversations}
-          disabled={
-            guest || busy ||
-            !snapshot.editable_fields.includes(
-              "retain_conversations"
-            )
-          }
-          onClick={() => {
-            const enabled =
-              !snapshot.settings.retain_conversations;
-
-            if (enabled && !window.confirm(
-              "Save future conversations locally? Existing saved history remains until deleted."
-            )) return;
-
-            void onSave({
-              retain_conversations: enabled,
-            });
-          }}
-        >
-          <span className="as-toggle-thumb" />
-        </button>
-        <Status>
-          {snapshot.settings.retain_conversations
-            ? "Enabled"
-            : "Disabled"}
-        </Status>
-      </SettingRow>
 
       <Notice>
         {guest
@@ -675,9 +657,37 @@ function StorageSettings({
         </p>
       ) : (
         <>
-          <SettingRow title="Database engine">
-            SQLite
-          </SettingRow>
+          <div className="as-storage-overview">
+            <div className="as-storage-metric">
+              <Database size={20} />
+              <span>Database engine</span>
+              <strong>SQLite</strong>
+            </div>
+
+            <div className="as-storage-metric">
+              <Activity size={20} />
+              <span>Database integrity</span>
+              <strong>
+                <Status tone={storage.integrity === "ok" ? "good" : "warning"}>
+                  {storage.integrity === "ok" ? "Healthy" : "Failed"}
+                </Status>
+              </strong>
+            </div>
+
+            <div className="as-storage-metric">
+              <ShieldCheck size={20} />
+              <span>Schema compatibility</span>
+              <strong>
+                <Status tone={
+                  storage.schema_version === storage.expected_schema_version
+                    ? "good" : "warning"
+                }>
+                  {storage.schema_version === storage.expected_schema_version
+                    ? "Up to date" : "Mismatch"}
+                </Status>
+              </strong>
+            </div>
+          </div>
 
           <SettingRow title="Schema version">
             v{storage.schema_version}
@@ -687,20 +697,16 @@ function StorageSettings({
             v{storage.expected_schema_version}
           </SettingRow>
 
-          <SettingRow title="Integrity check">
-            <Status
-              tone={storage.integrity === "ok" ? "good" : "warning"}
-            >
-              {storage.integrity === "ok" ? "Healthy" : "Failed"}
+          <SettingRow title="Storage location">
+            <Status tone={storage.local_only ? "good" : "neutral"}>
+              {storage.local_only ? "Local device" : "Unknown"}
             </Status>
           </SettingRow>
 
-          <SettingRow title="Storage location">
-            {storage.local_only ? "Local device" : "Unknown"}
-          </SettingRow>
-
           <SettingRow title="Application-level encryption">
-            {storage.encrypted_by_application ? "Enabled" : "Not enabled"}
+            <Status tone={storage.encrypted_by_application ? "good" : "warning"}>
+              {storage.encrypted_by_application ? "Enabled" : "Not enabled"}
+            </Status>
           </SettingRow>
         </>
       )}
@@ -873,13 +879,17 @@ export default function SettingsWorkspace(
 
           <div hidden={section !== "general"}>
             <GeneralSettings key={snapshot.revision} {...safeProps} />
+
           </div>
 
           {section === "ai" && (
             <ProviderSettings
-              snapshot={snapshot}
               providers={providers}
             />
+          )}
+
+          {section === "integrations" && (
+            <IntegrationPanel guest={guest}/>
           )}
 
           {section === "security" && (
@@ -896,7 +906,7 @@ export default function SettingsWorkspace(
 
           {section === "audit" && (
             <section className="panel as-panel">
-              <h2>Security activity</h2>
+              <h2>Audit log</h2>
 
               <p className="as-description">
                 Metadata-only settings events. Messages,
@@ -908,16 +918,31 @@ export default function SettingsWorkspace(
                   Activity unavailable or loading.
                 </p>
               ) : audit.events.length === 0 ? (
-                <Notice>No settings activity recorded yet.</Notice>
+                <div className="as-audit-empty">
+                  <Activity size={28} />
+                  <strong>No settings activity recorded yet</strong>
+                  <p>Settings changes will appear here.</p>
+                </div>
               ) : (
                 <div className="as-audit-list">
+                  <div className="as-audit-summary">
+                    <strong>Settings activity</strong>
+                    <span>{audit.events.length} loaded events</span>
+                  </div>
                   {audit.events.map(event => (
                     <article key={event.id}>
-                      <Activity size={18} />
-                      <div>
+                      <div className="as-audit-icon">
+                        <Activity size={18} />
+                      </div>
+                      <div className="as-audit-copy">
                         <strong>
-                          {event.event_type.replaceAll(".", " ")
-                            .replaceAll("_", " ")}
+                          {event.event_type === "settings.updated"
+                            ? "Settings updated"
+                            : event.event_type === "emergency_stop.enabled"
+                              ? "Emergency stop activated"
+                              : event.event_type === "emergency_stop.disabled"
+                                ? "Emergency stop deactivated"
+                                : event.event_type.replaceAll(".", " ").replaceAll("_", " ")}
                         </strong>
                         <p>
                           Revision {event.settings_revision}

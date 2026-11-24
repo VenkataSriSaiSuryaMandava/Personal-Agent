@@ -14,10 +14,11 @@ import {
   WORKSPACE_CONFIG,
   getWorkspaceCounts,
   type RecordWorkspace,
-  type WorkspaceCounts,
+  type WorkspaceSummaryData,
 } from "@/lib/workspaces";
 
 import "./FunctionalWorkspace.css";
+import "./WorkspaceExperience.css";
 
 export default function WorkspaceSummary({
   guest,
@@ -26,8 +27,10 @@ export default function WorkspaceSummary({
   guest: boolean;
   onNavigate: (workspace: Workspace) => void;
 }) {
-  const [counts, setCounts] =
-    useState<WorkspaceCounts | null>(null);
+  const [summary, setSummary] =
+    useState<WorkspaceSummaryData | null>(null);
+
+  const counts = summary?.counts;
 
   const [failed, setFailed] =
     useState(false);
@@ -39,7 +42,7 @@ export default function WorkspaceSummary({
 
     getWorkspaceCounts()
       .then(result => {
-        if (active) setCounts(result.counts);
+        if (active) setSummary(result);
       })
       .catch(() => {
         if (active) setFailed(true);
@@ -55,6 +58,33 @@ export default function WorkspaceSummary({
       <div className="panel-heading">
         <h2>Workspace records</h2>
       </div>
+
+      {!guest && summary && (
+        <div className="wx-overview-priorities">
+          <button onClick={() => onNavigate("tasks")}>
+            <span>Open tasks</span>
+            <strong>
+              {(summary.statuses.tasks.todo ?? 0) +
+                (summary.statuses.tasks.in_progress ?? 0)}
+            </strong>
+          </button>
+
+          <button onClick={() => onNavigate("jobs")}>
+            <span>Interviews</span>
+            <strong>{summary.statuses.jobs.interview ?? 0}</strong>
+          </button>
+
+          <button onClick={() => onNavigate("approvals")}>
+            <span>Pending decisions</span>
+            <strong>{summary.statuses.approvals.pending ?? 0}</strong>
+          </button>
+
+          <button onClick={() => onNavigate("calendar")}>
+            <span>Planned events</span>
+            <strong>{summary.statuses.calendar.planned ?? 0}</strong>
+          </button>
+        </div>
+      )}
 
       <div className="fw-summary-grid">
         {Object.keys(WORKSPACE_CONFIG).map(key => {

@@ -126,14 +126,15 @@ async def read_payload(request, schema):
 
 @router.get("/summary")
 def summary(
+    request: Request,
     user_id: int = Depends(authorize),
 ):
-    return respond({
-        "counts": execute(
-            storage.counts,
-            user_id,
-        )
-    })
+    if request.query_params:
+        deny(422, "Invalid query")
+
+    return respond(
+        execute(storage.workspace_summary, user_id)
+    )
 
 
 @router.get("/{workspace}")

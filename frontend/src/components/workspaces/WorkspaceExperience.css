@@ -1,0 +1,725 @@
+.wx-workspace {
+  gap: 20px;
+}
+
+.wx-page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wx-page-title > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.wx-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.wx-metric {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+  color: var(--text);
+  min-width: 0;
+}
+
+.wx-metric svg {
+  color: var(--accent);
+}
+
+.wx-metric span {
+  text-transform: capitalize;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wx-metric strong {
+  font-size: 25px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+button.wx-metric:hover,
+.wx-metric[data-active="true"] {
+  border-color: var(--accent);
+}
+
+.wx-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.wx-section-heading h2 {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.wx-section-heading p {
+  margin-top: 5px;
+}
+
+.wx-section-heading > svg {
+  color: var(--accent);
+}
+
+.wx-integrations,
+.wx-calendar,
+.wx-search {
+  display: grid;
+  gap: 16px;
+}
+
+.wx-integration-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.wx-integration {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.wx-integration > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.wx-integration > div {
+  flex: 1;
+  min-width: 140px;
+}
+
+.wx-integration strong,
+.wx-info strong {
+  font-size: 14px;
+}
+
+.wx-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.wx-info > svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.wx-info p {
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+.wx-grow {
+  flex: 1;
+}
+
+.wx-toolbar > button:first-child {
+  background: #2563eb;
+  color: white;
+  border-color: transparent;
+}
+
+.wx-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.wx-weekday {
+  text-align: center;
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.wx-day,
+.wx-day-blank {
+  min-height: 94px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.wx-day {
+  background: var(--bg);
+  color: var(--text);
+  padding: 8px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.wx-day:hover,
+.wx-day[data-today="true"] {
+  border-color: var(--accent);
+}
+
+.wx-day[data-selected="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.wx-day-blank {
+  opacity: 0.3;
+}
+
+.wx-calendar-event {
+  display: block;
+  max-width: 100%;
+  font-size: 10px;
+  color: var(--accent);
+  background: var(--hover);
+  border-radius: 4px;
+  padding: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wx-workspace .fw-records[data-layout="list"] {
+  grid-template-columns: 1fr;
+}
+
+.wx-workspace .fw-records[data-layout="pipeline"] {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.wx-record-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.wx-record-title input {
+  accent-color: #2563eb;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.wx-record-title h3[data-complete="true"] {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.wx-priority {
+  text-transform: capitalize;
+  font-size: 11px;
+  color: var(--muted);
+  margin-right: auto;
+}
+
+.wx-priority[data-priority="high"] {
+  color: #f97316;
+}
+
+.fw-status[data-status="completed"],
+.fw-status[data-status="approved"],
+.fw-status[data-status="offer"] {
+  color: #4ade80;
+}
+
+.fw-status[data-status="rejected"],
+.fw-status[data-status="cancelled"] {
+  color: #f87171;
+}
+
+[data-theme="light"] .fw-status[data-status="completed"],
+[data-theme="light"] .fw-status[data-status="approved"],
+[data-theme="light"] .fw-status[data-status="offer"] {
+  color: #166534;
+}
+
+[data-theme="light"] .fw-status[data-status="rejected"],
+[data-theme="light"] .fw-status[data-status="cancelled"] {
+  color: #b91c1c;
+}
+
+.wx-workspace .fw-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.wx-workspace .fw-empty svg {
+  color: var(--accent);
+}
+
+.wx-workspace .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.wx-workspace[data-kind="email"] .fw-form textarea {
+  min-height: 230px;
+}
+
+.wx-workspace[data-kind="research"] .fw-form textarea,
+.wx-workspace[data-kind="coding"] .fw-form textarea {
+  min-height: 180px;
+}
+
+.wx-workspace select:focus-visible,
+.wx-workspace textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .wx-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wx-day,
+  .wx-day-blank {
+    min-height: 58px;
+  }
+
+  .wx-day {
+    padding: 4px;
+    font-size: 12px;
+  }
+
+  .wx-calendar-event {
+    font-size: 9px;
+  }
+
+  .wx-info {
+    flex-wrap: wrap;
+  }
+
+  .wx-workspace .fw-records[data-layout="pipeline"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-workspace * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Dedicated workspace collection layouts */
+
+.wx-pipeline {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 290px);
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px 2px 12px;
+  max-width: 100%;
+  min-width: 0;
+  align-items: start;
+}
+
+.wx-pipeline-column {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--sidebar);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.wx-column-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-transform: capitalize;
+  font-size: 13px;
+  padding: 4px;
+}
+
+.wx-column-heading span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.wx-pipeline-column .fw-record {
+  padding: 14px;
+}
+
+.wx-pipeline-column .fw-record-head {
+  flex-wrap: wrap;
+}
+
+.wx-email-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.wx-email-list {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.wx-email-list h2 {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.wx-email-list button {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  text-align: left;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wx-email-list button[data-selected="true"] {
+  border-color: var(--accent);
+  background: var(--hover);
+}
+
+.wx-email-list button span,
+.wx-email-list button small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.wx-email-preview {
+  min-width: 0;
+}
+
+.wx-email-preview .fw-record {
+  min-height: 250px;
+}
+
+.wx-email-preview .fw-notes {
+  max-height: 520px;
+}
+
+.wx-decision-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.wx-decision-layout > section {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.wx-decision-layout h2,
+.wx-diagnostics h2 {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.wx-view-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wx-view-tabs button {
+  text-transform: capitalize;
+}
+
+.wx-view-tabs button[data-active="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wx-calendar-agenda {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.wx-calendar-agenda[data-view="day"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.wx-agenda-day {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 8px;
+}
+
+.wx-agenda-day > button:last-child {
+  margin-top: auto;
+}
+
+.wx-agenda-event {
+  display: grid;
+  gap: 4px;
+  background: var(--hover);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 9px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.wx-agenda-event small {
+  color: var(--muted);
+}
+
+.wx-diagnostics {
+  display: grid;
+  gap: 16px;
+}
+
+.wx-diagnostic {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.wx-diagnostic span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wx-diagnostic strong {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.wx-field-caption {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.wx-overview-priorities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.wx-overview-priorities button {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  padding: 14px;
+  color: var(--text);
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.wx-overview-priorities button:hover {
+  border-color: var(--accent);
+}
+
+.wx-overview-priorities span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.wx-overview-priorities strong {
+  font-size: 24px;
+  color: var(--accent);
+}
+
+.wx-workspace[data-kind="tasks"] .fw-record {
+  padding: 14px 18px;
+}
+
+.wx-workspace[data-kind="tasks"] .fw-notes {
+  max-height: 100px;
+}
+
+.wx-workspace[data-kind="research"] .fw-record,
+.wx-workspace[data-kind="coding"] .fw-record {
+  border-top: 2px solid var(--accent);
+}
+
+@media (max-width: 700px) {
+  .wx-email-layout,
+  .wx-decision-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wx-email-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .wx-pipeline {
+    grid-auto-columns: minmax(220px, 85%);
+  }
+}
+
+/* Final visual density and redundancy cleanup */
+
+.wx-workspace {
+  gap: 16px;
+}
+
+.wx-workspace .page-heading h1 {
+  margin: 5px 0;
+}
+
+.wx-workspace .fw-empty {
+  padding: 26px 20px;
+  gap: 9px;
+}
+
+.wx-workspace .wx-metric {
+  padding: 14px 18px;
+  gap: 6px;
+}
+
+.wx-workspace .wx-metric strong {
+  font-size: 22px;
+}
+
+.wx-workspace .wx-integrations {
+  gap: 10px;
+  padding: 16px;
+}
+
+.wx-workspace .wx-integration-grid {
+  grid-template-columns:
+    repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
+.wx-workspace .wx-integration {
+  padding: 10px 12px;
+  gap: 10px;
+}
+
+.wx-workspace .wx-integration > div {
+  min-width: 100px;
+}
+
+.wx-workspace .wx-info {
+  padding: 14px 16px;
+}
+
+.wx-pipeline-column {
+  min-height: 140px;
+}
+
+.wx-workspace .wx-diagnostics {
+  padding: 16px;
+}
+
+.wx-workspace .fw-controls {
+  padding: 12px;
+}
+
+.wx-workspace .fw-status {
+  text-transform: capitalize;
+}
+
+.wx-workspace .fw-list-heading h2 {
+  font-size: 16px;
+}
+
+.wx-workspace .fw-reference {
+  overflow-wrap: anywhere;
+}
+
+.wx-workspace .wx-calendar {
+  padding: 16px;
+}
+
+.wx-workspace .wx-day {
+  min-height: 82px;
+}
+
+@media (max-width: 700px) {
+  .wx-workspace {
+    gap: 12px;
+  }
+
+  .wx-workspace .wx-day {
+    min-height: 48px;
+  }
+
+  .wx-workspace .wx-integration-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Final Jobs pipeline layout */
+.wx-pipeline {
+  grid-auto-columns: minmax(180px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  overscroll-behavior-inline: contain;
+}
+
+.wx-pipeline-column {
+  min-height: 240px;
+  align-content: start;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.wx-column-heading {
+  padding: 6px 2px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wx-column-heading span {
+  min-width: 24px;
+  padding: 3px 7px;
+  text-align: center;
+  border-radius: 6px;
+  background: var(--hover);
+  font-variant-numeric: tabular-nums;
+}
+
+.wx-stage-empty {
+  display: grid;
+  place-items: center;
+  min-height: 75px;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .wx-pipeline {
+    grid-auto-columns: minmax(200px, 75%);
+  }
+}
