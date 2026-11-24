@@ -96,32 +96,56 @@ export default function FunctionalWorkspace({
   const operation = useRef(false);
 
   useEffect(() => {
+    let active = true;
+
     mounted.current = true;
 
     if (!guest) {
       listRecords(workspace)
         .then(result => {
-          if (!mounted.current) return;
+          if (!active) return;
 
           setRecords(result.records);
           setNextOffset(result.next_offset);
         })
         .catch(() => {
-          if (mounted.current) {
-            setError("Unable to load workspace.");
+          if (active) {
+            setError("Unable to load workspace. Use Refresh to retry.");
           }
         })
         .finally(() => {
-          if (mounted.current) {
-            setBusy(false);
-          }
+          if (active) setBusy(false);
         });
     }
 
     return () => {
+      active = false;
       mounted.current = false;
     };
   }, [workspace, guest]);
+
+  async function reconcileAfterMutation() {
+    if (guest || !mounted.current) return;
+
+    // A mutation can change list ordering and offsets.
+    // Never continue pagination using the old offset.
+    setNextOffset(null);
+
+    try {
+      const result = await listRecords(workspace, 0);
+
+      if (!mounted.current) return;
+
+      setRecords(result.records);
+      setNextOffset(result.next_offset);
+    } catch {
+      if (mounted.current) {
+        setError(
+          "Change saved. Refresh to reload the current list.",
+        );
+      }
+    }
+  }
 
   function change<K extends keyof RecordInput>(
     key: K,
@@ -167,6 +191,7 @@ export default function FunctionalWorkspace({
     operation.current = true;
     setBusy(true);
     setError("");
+    setNotice("");
 
     try {
       const result = await listRecords(
@@ -264,6 +289,8 @@ export default function FunctionalWorkspace({
           ? "Temporary sample record saved."
           : "Record saved locally.",
       );
+
+      await reconcileAfterMutation();
     } catch (failure) {
       if (mounted.current) {
         setError(
@@ -312,6 +339,8 @@ export default function FunctionalWorkspace({
       }
 
       setNotice("Record deleted.");
+
+      await reconcileAfterMutation();
     } catch (failure) {
       if (mounted.current) {
         setError(
@@ -386,7 +415,7 @@ export default function FunctionalWorkspace({
 
         <input
           aria-label="Search records"
-          placeholder="Search loaded records..."
+          placeholder="Search displayed records..."
           value={query}
           onChange={event =>
             setQuery(event.target.value)

@@ -1,6 +1,8 @@
 import json
 import sqlite3
 
+from pydantic import ValidationError
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -49,6 +51,12 @@ def execute(operation, *args):
 
     except storage.RecordConflict:
         deny(409, "Record changed; reload")
+
+    except ValidationError:
+        deny(503, "Workspace storage unavailable")
+
+    except json.JSONDecodeError:
+        deny(503, "Workspace storage unavailable")
 
     except ValueError:
         deny(422, "Invalid workspace request")
@@ -149,22 +157,15 @@ def records(
         request, "offset", 0, 0, 1000000
     )
 
-    result = execute(
-        storage.list_records,
-        user_id,
-        workspace,
-        limit,
-        offset,
+    return respond(
+        execute(
+            storage.list_page,
+            user_id,
+            workspace,
+            limit,
+            offset,
+        )
     )
-
-    return respond({
-        "records": result,
-        "next_offset": (
-            offset + limit
-            if len(result) == limit
-            else None
-        ),
-    })
 
 
 @router.post("/{workspace}")
@@ -179,6 +180,14 @@ async def create(
         request,
         WorkspaceRecord,
     )
+
+    current_user = await run_in_threadpool(
+        authorize, request
+    )
+
+    if current_user != user_id:
+        deny(403, "Request denied")
+
 
     return respond(
         await run_in_threadpool(
@@ -205,6 +214,14 @@ async def update(
         request,
         WorkspaceUpdate,
     )
+
+    current_user = await run_in_threadpool(
+        authorize, request
+    )
+
+    if current_user != user_id:
+        deny(403, "Request denied")
+
 
     record = WorkspaceRecord.model_validate(
         payload.model_dump(
@@ -245,7 +262,7 @@ def remove(
         "revision",
         0,
         1,
-        9223372036854775807,
+        9007199254740991,
     )
 
     return respond(
