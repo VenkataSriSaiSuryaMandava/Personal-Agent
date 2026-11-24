@@ -16,6 +16,10 @@ import {
 
 import { writeWorkspaceLocation } from "@/lib/workspace-location";
 
+import {
+  rememberActiveConversation,
+} from "@/lib/conversation-location";
+
 const GUEST_SESSION_KEY = "aegis-guest-preview";
 
 function hasGuestSession() {
@@ -89,6 +93,7 @@ export default function AuthGate({
     void check();
 
     function expired() {
+      rememberActiveConversation(null);
       rememberGuestSession(false);
       setState("locked");
     }
@@ -131,6 +136,7 @@ export default function AuthGate({
 
       if (response.ok && result.authenticated === true) {
         rememberGuestSession(false);
+        rememberActiveConversation(null);
         writeWorkspaceLocation("overview", "general", true);
         setState("authenticated");
         setUsername("");
@@ -168,6 +174,7 @@ export default function AuthGate({
         throw new Error("Logout failed");
       }
 
+      rememberActiveConversation(null);
       rememberGuestSession(false);
       setState("locked");
     } catch {
@@ -325,7 +332,8 @@ export default function AuthGate({
                 setPassword("");
                 setError("");
                 rememberGuestSession(true);
-                writeWorkspaceLocation("overview", "general", true);
+                rememberActiveConversation(null);
+        writeWorkspaceLocation("overview", "general", true);
                 setState("guest");
               }}
             >

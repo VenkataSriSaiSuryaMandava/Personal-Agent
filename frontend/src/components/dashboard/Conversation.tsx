@@ -13,6 +13,11 @@ import {
   type ConversationSummary,
 } from "@/lib/conversations";
 
+import {
+  readActiveConversation,
+  rememberActiveConversation,
+} from "@/lib/conversation-location";
+
 import "./Conversation.css";
 
 type Turn = { user: string; assistant: string };
@@ -97,7 +102,7 @@ export default function Conversation({
 
   const [savedCount, setSavedCount] = useState(0);
 
-  const [historyBusy, setHistoryBusy] = useState(false);
+  const [historyBusy, setHistoryBusy] = useState(!guest);
 
   const [historyError, setHistoryError] = useState("");
 
@@ -129,25 +134,86 @@ export default function Conversation({
     if (guest) return;
 
     let active = true;
+    historyOperation.current = true;
 
-    listConversations()
-      .then(result => {
+    async function restore() {
+      try {
+        const result = await listConversations();
+
         if (!active) return;
 
         setSavedChats(result.conversations);
         setNextOffset(result.next_offset);
         setHistoryError("");
-      })
-      .catch(() => {
+
+        const id = readActiveConversation();
+
+        if (!id) return;
+
+        try {
+          const saved = await openConversation(id);
+
+          if (!active) return;
+
+          setTurns(saved.turns.map(turn => ({
+            user: turn.user,
+            assistant: turn.assistant,
+          })));
+
+          setActiveId(saved.id);
+          setSavedCount(saved.turns.length);
+          setSaveNotice("Saved conversation restored.");
+
+          setSavedChats(previous => {
+            if (previous.some(chat => chat.id === saved.id)) {
+              return previous;
+            }
+
+            return [{
+              id: saved.id,
+              title: saved.title,
+              created_at: saved.created_at,
+              updated_at: saved.updated_at,
+            }, ...previous];
+          });
+
+        } catch (failure) {
+          if (!active) return;
+
+          if (
+            failure instanceof Error &&
+            failure.message === "Conversation no longer exists."
+          ) {
+            rememberActiveConversation(null);
+            setHistoryError(
+              "Previous conversation no longer exists."
+            );
+          } else {
+            setHistoryError(
+              "Unable to restore previous conversation. Reopen it from history."
+            );
+          }
+        }
+
+      } catch {
         if (active) {
           setHistoryError(
             "Unable to load saved conversations."
           );
         }
-      });
+      } finally {
+        if (active) {
+          historyOperation.current = false;
+          setHistoryBusy(false);
+        }
+      }
+    }
+
+    void restore();
 
     return () => {
       active = false;
+      historyOperation.current = false;
     };
   }, [guest]);
 
@@ -228,6 +294,7 @@ export default function Conversation({
       })));
 
       setActiveId(result.id);
+      rememberActiveConversation(result.id);
       setSavedCount(result.turns.length);
       setSaveNotice("");
       setCopied(null);
@@ -260,6 +327,7 @@ export default function Conversation({
       if (activeId === chat.id) {
         setTurns([]);
         setActiveId(null);
+        rememberActiveConversation(null);
         setSavedCount(0);
         setSaveNotice("");
         setCopied(null);
@@ -284,6 +352,10 @@ export default function Conversation({
 
     setTurns([]);
     setActiveId(null);
+
+    if (!guest) {
+      rememberActiveConversation(null);
+    }
     setSavedCount(0);
     setSaveNotice("");
     update("");
@@ -343,6 +415,7 @@ export default function Conversation({
         validConversationId(data.conversation_id)
       ) {
         setActiveId(data.conversation_id);
+        rememberActiveConversation(data.conversation_id);
         setSavedCount(previous => previous + 1);
         setSaveNotice("Conversation saved locally.");
 
@@ -486,7 +559,13 @@ export default function Conversation({
         <button type="button" className="ac-button" disabled={busy || historyBusy} onClick={newChat}><Plus size={16}/> New chat</button>
       </header>
       <div className="ac-scroll" ref={messages} aria-live="polite" aria-busy={busy}>
-        {turns.length === 0 && !pending && <div className="ac-welcome">
+        {historyBusy && turns.length === 0 && (
+          <div className="ac-loading" role="status">
+            <LoaderCircle size={18}/>
+            Loading conversation…
+          </div>
+        )}
+        {turns.length === 0 && !pending && !historyBusy && <div className="ac-welcome">
           <span className="ac-hero-icon"><Sparkles size={30}/></span>
           <span className="ac-eyebrow">YOUR INTELLIGENCE WORKSPACE</span>
           <h1>What can I help you with?</h1>
