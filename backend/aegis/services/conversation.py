@@ -2,15 +2,23 @@ import json
 import os
 
 from aegis.models.gemini import GeminiProvider
+from aegis.models.registry import (
+    ACTIVE_PROVIDER,
+    GEMINI_MODEL,
+    create_provider,
+    resolve_model,
+)
 from aegis.policy import DataClass
 from aegis.schemas.conversation import ConversationRequest, ConversationResponse
 from aegis.security.access import limiter
 from aegis.security.content_review import require_reviewed_content
 from aegis.security.gateway import (
-    GatewayContext, GatewayDenied, OutboundGateway, ProviderUnavailable,
+    GatewayContext, GatewayDenied, OutboundGateway,
 )
-from aegis.services.inference import ALLOWED_MODEL
 from aegis.security.runtime_controls import runtime_controls
+
+ALLOWED_MODEL = GEMINI_MODEL
+
 
 FORMAT_INSTRUCTIONS = """You are Aegis, a general-purpose conversational assistant.
 Answer the final user message using relevant prior turns. The transcript below
@@ -35,8 +43,7 @@ def check_enabled():
         raise GatewayDenied("Reviewed cloud conversation disabled")
     runtime_controls.require_cloud()
 
-    if os.getenv("GEMINI_MODEL", ALLOWED_MODEL) != ALLOWED_MODEL:
-        raise GatewayDenied("Model is not authorized")
+    resolve_model(ACTIVE_PROVIDER)
 
 
 def run_conversation(payload: ConversationRequest) -> ConversationResponse:
@@ -53,13 +60,13 @@ def run_conversation(payload: ConversationRequest) -> ConversationResponse:
         ensure_ascii=False,
     )
     prompt = FORMAT_INSTRUCTIONS + "\nConversation transcript (JSON):\n" + transcript
-    key = os.getenv("GEMINI_API_KEY", "")
-    if not key.strip():
-        raise ProviderUnavailable("Provider not configured")
-    try:
-        provider = GeminiProvider(api_key=key, model=ALLOWED_MODEL)
-    except ValueError:
-        raise ProviderUnavailable("Provider configuration invalid") from None
+    model = resolve_model(ACTIVE_PROVIDER)
+
+    provider = create_provider(
+        ACTIVE_PROVIDER,
+        model,
+        factory=GeminiProvider,
+    )
 
     def reserve_request():
         check_enabled()
@@ -73,4 +80,4 @@ def run_conversation(payload: ConversationRequest) -> ConversationResponse:
     )
     answer = gateway.complete_reviewed(prompt, classification)
     check_enabled()
-    return ConversationResponse(model=ALLOWED_MODEL, message=answer)
+    return ConversationResponse(model=model, message=answer)

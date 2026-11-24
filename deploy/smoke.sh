@@ -52,3 +52,22 @@ do
 done
 
 echo 'Public conversation history isolation passed.'
+
+# Local workspace APIs must remain inaccessible publicly.
+
+for workspace in summary tasks jobs email calendar research coding browser memory approvals
+do
+  test "$(status GET "/api/agent/workspaces/$workspace")" = 403
+done
+
+for workspace in tasks jobs email calendar research coding browser memory approvals
+do
+  test "$(status POST "/api/agent/workspaces/$workspace")" = 403
+
+  for method in PATCH DELETE
+  do
+    test "$(status "$method" "/api/agent/workspaces/$workspace/00000000-0000-0000-0000-000000000000")" = 403
+  done
+done
+
+echo 'Public workspace isolation passed.'

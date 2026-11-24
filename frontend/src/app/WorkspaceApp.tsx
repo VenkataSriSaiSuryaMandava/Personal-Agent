@@ -17,7 +17,8 @@ import Conversation from "@/components/dashboard/Conversation";
 import SystemStatus from "@/components/dashboard/SystemStatus";
 import Approvals from "@/components/dashboard/Approvals";
 import SettingsWorkspace from "@/components/settings/SettingsWorkspace";
-import WorkspacePreview from "@/components/workspaces/WorkspacePreview";
+import FunctionalWorkspace from "@/components/workspaces/FunctionalWorkspace";
+import WorkspaceSummary from "@/components/workspaces/WorkspaceSummary";
 
 import {
   readWorkspaceLocation,
@@ -118,6 +119,13 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   const [failed, setFailed] = useState(false);
 
   const operation = useRef(false);
+  const navigationRevision = useRef(0);
+
+  function clearNavigationNotice() {
+    navigationRevision.current += 1;
+    setMessage("");
+    setFailed(false);
+  }
 
   const systemDark = useSyncExternalStore(
     subscribeColorScheme,
@@ -206,6 +214,10 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
 
   useEffect(() => {
     function restoreLocation() {
+      navigationRevision.current += 1;
+      setMessage("");
+      setFailed(false);
+
       const location = readWorkspaceLocation(
         snapshot?.settings.startup_workspace ?? "overview"
       );
@@ -228,6 +240,9 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   }, [snapshot?.settings.startup_workspace]);
 
   function navigate(workspace: Workspace) {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    clearNavigationNotice();
+
     const section =
       workspace === "settings" && active === "settings"
         ? settingsSection
@@ -243,6 +258,8 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   }
 
   function navigateSettings(section: SettingsSection) {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    clearNavigationNotice();
     setSettingsSection(section);
 
     writeWorkspaceLocation(
@@ -258,6 +275,8 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
     if (operation.current) return false;
 
     operation.current = true;
+    const startedAt = navigationRevision.current;
+
     setBusy(true);
     setMessage("");
 
@@ -265,18 +284,23 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
       const result = await action();
 
       setSnapshot(result);
-      setFailed(false);
-      setMessage(success);
+
+      if (startedAt === navigationRevision.current) {
+        setFailed(false);
+        setMessage(success);
+      }
 
       return true;
     } catch (error) {
-      setFailed(true);
+      if (startedAt === navigationRevision.current) {
+        setFailed(true);
 
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Settings operation failed."
-      );
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Settings operation failed."
+        );
+      }
 
       return false;
     } finally {
@@ -381,6 +405,7 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
       className="app-shell ac-shell"
       data-theme={dark ? "dark" : "light"}
       data-sidebar={collapsed ? "collapsed" : "expanded"}
+      data-workspace={active}
     >
       <Sidebar active={active} onNavigate={navigate}/>
 
@@ -442,7 +467,10 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
             </section>
           ) : (
             <>
-              <div hidden={active !== "chat"}>
+              <div
+                className="ac-chat-workspace"
+                hidden={active !== "chat"}
+              >
                 <Conversation
                   guest={guest}
                   retain={!guest &&
@@ -475,13 +503,13 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                     />
                     <StatusCard
                       title="Task engine"
-                      value="Off"
-                      description="Not implemented yet"
+                      value="Manual"
+                      description="Tasks and deadlines"
                     />
                     <StatusCard
-                      title="File access"
-                      value="Off"
-                      description="Not connected"
+                      title="Integrations"
+                      value="Offline"
+                      description="External accounts not connected"
                     />
                     <StatusCard
                       title="Execution"
@@ -507,6 +535,8 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                         </button>
                       </section>
 
+
+
                       <section className="panel ac-overview-card">
                         <h2>Control your workspace</h2>
                         <p>
@@ -523,6 +553,10 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                     </div>
 
                     <div className="right-column">
+                      <WorkspaceSummary
+                        guest={guest}
+                        onNavigate={navigate}
+                      />
                       {guest ? (
                         <section className="panel">
                           <div className="panel-heading">
@@ -594,17 +628,11 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
               {active !== "chat" &&
                active !== "overview" &&
                active !== "settings" && (
-                <WorkspacePreview
+                <FunctionalWorkspace
+                  key={active}
                   workspace={active}
-                  onNavigate={navigate}
-                  onOpenSecurity={() => {
-                    setActive("settings");
-                    setSettingsSection("security");
-                    writeWorkspaceLocation(
-                      "settings",
-                      "security"
-                    );
-                  }}
+                  guest={guest}
+                  onAssistant={() => navigate("chat")}
                 />
               )}
             </>

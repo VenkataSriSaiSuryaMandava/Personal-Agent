@@ -826,3 +826,112 @@ input:focus-visible {
   color: #94a3b8;
   margin-top: 12px;
 }
+
+/* v0.3.0: viewport-aware shared workspace shell. */
+
+.ac-shell .main-content,
+.ac-shell .workspace-content {
+  min-width: 0;
+}
+
+.ac-shell .topbar .breadcrumb {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ac-shell .header-actions {
+  flex-shrink: 0;
+}
+
+.ac-shell[data-workspace="chat"] {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.aegis-auth-bar ~ .ac-shell[data-workspace="chat"] {
+  height: calc(100dvh - 54px);
+}
+
+.ac-shell[data-workspace="chat"] .sidebar {
+  height: 100%;
+  min-height: 0;
+}
+
+.ac-shell[data-workspace="chat"] .main-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ac-shell[data-workspace="chat"] .ac-topbar-wrap {
+  flex-shrink: 0;
+}
+
+.ac-shell[data-workspace="chat"] .ac-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.ac-shell[data-workspace="chat"] .ac-chat-workspace {
+  flex: 1;
+  min-height: 0;
+}
+
+.ac-shell[data-workspace="chat"] .ac-history-layout {
+  height: 100%;
+}
+
+.ac-shell .ac-chat-workspace[hidden] {
+  display: none;
+}
+
+.ac-shell .as-global-message {
+  flex-shrink: 0;
+}
+
+@media (max-width: 950px),
+       (max-height: 680px) {
+  .ac-shell[data-workspace="chat"] .ac-workspace {
+    overflow-y: auto;
+  }
+
+  .ac-shell[data-workspace="chat"] .ac-chat-workspace {
+    flex: none;
+    min-height: min(620px, 80dvh);
+  }
+
+  .ac-shell[data-workspace="chat"] .ac-history-layout {
+    height: auto;
+    min-height: 0;
+  }
+
+  .ac-shell[data-workspace="chat"] .ac-panel {
+    height: min(680px, 85dvh);
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 700px) {
+  .ac-shell[data-workspace="chat"] .ac-workspace {
+    padding: 8px;
+  }
+
+  .ac-shell .topbar {
+    padding-block: 12px;
+    padding-right: 10px;
+  }
+
+  .ac-shell .header-actions {
+    gap: 6px;
+  }
+
+  .ac-shell .nav-item {
+    padding-inline: 8px;
+  }
+}
