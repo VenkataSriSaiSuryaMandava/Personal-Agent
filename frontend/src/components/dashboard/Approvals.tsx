@@ -15,15 +15,15 @@ export default function Approvals({
       </div>
 
       <div className="empty-state">
-        <strong>No pending approval requests</strong>
+        <strong>External execution is disabled</strong>
         <p>
-          External actions and personal data access are
-          not enabled in this preview.
+          Manual approval records do not grant permissions
+          or authorize external actions.
         </p>
       </div>
 
       <button className="secondary-button" onClick={onOpen}>
-        View permissions
+        View approval records
       </button>
     </section>
   );

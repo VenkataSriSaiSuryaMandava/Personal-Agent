@@ -25,7 +25,9 @@ class RecordConflict(Exception):
 
 
 def serialize(row):
-    payload = json.loads(row["payload"])
+    payload = WorkspaceRecord.model_validate(
+        json.loads(row["payload"])
+    ).model_dump()
 
     return {
         **payload,
@@ -68,6 +70,71 @@ def list_records(
         )).fetchall()
 
     return [serialize(row) for row in rows]
+
+
+def list_page(
+    user_id: int,
+    workspace: str,
+    limit: int = 100,
+    offset: int = 0,
+    path: Path = DATABASE_PATH,
+):
+    if workspace not in STATUSES:
+        raise ValueError("Invalid workspace")
+
+    if not 1 <= limit <= 100:
+        raise ValueError("Invalid limit")
+
+    if not 0 <= offset <= 1000000:
+        raise ValueError("Invalid offset")
+
+    with connect(path) as connection:
+        rows = connection.execute("""
+            SELECT *
+            FROM workspace_records
+            WHERE user_id = ? AND workspace = ?
+            ORDER BY updated_at DESC, id DESC
+            LIMIT ? OFFSET ?
+        """, (
+            user_id,
+            workspace,
+            limit + 1,
+            offset,
+        )).fetchall()
+
+    return {
+        "records": [
+            serialize(row)
+            for row in rows[:limit]
+        ],
+        "next_offset": (
+            offset + limit
+            if len(rows) > limit
+            and offset + limit <= 1000000
+            else None
+        ),
+    }
+
+
+def list_audit_events(
+    user_id: int,
+    limit: int = 100,
+    path: Path = DATABASE_PATH,
+):
+    if type(limit) is not int or not 1 <= limit <= 100:
+        raise ValueError("Invalid audit limit")
+
+    with connect(path) as connection:
+        rows = connection.execute("""
+            SELECT id, workspace, record_id,
+                   event_type, revision, created_at
+            FROM workspace_audit_events
+            WHERE user_id = ?
+            ORDER BY id DESC
+            LIMIT ?
+        """, (user_id, limit)).fetchall()
+
+    return [dict(row) for row in rows]
 
 
 def counts(
@@ -169,6 +236,9 @@ def update_record(
             int(time.time()),
             row["updated_at"],
         )
+
+        if expected_revision >= 9007199254740991:
+            raise RecordConflict()
 
         revision = expected_revision + 1
 

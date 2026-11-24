@@ -10,7 +10,7 @@ from aegis.storage.database import (
 from aegis.storage.settings import ApplicationSettings
 
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 
 def initialize_database(
@@ -259,3 +259,93 @@ def initialize_database(
             """)
 
             connection.execute("PRAGMA user_version = 5")
+
+
+            version = 5
+
+        if version == 5:
+
+            connection.execute("""
+                CREATE TABLE workspace_audit_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    workspace TEXT NOT NULL CHECK (
+                        workspace IN (
+                            'tasks', 'jobs', 'email',
+                            'calendar', 'research', 'coding',
+                            'browser', 'memory', 'approvals'
+                        )
+                    ),
+                    record_id TEXT NOT NULL,
+                    event_type TEXT NOT NULL CHECK (
+                        event_type IN (
+                            'created', 'updated', 'deleted'
+                        )
+                    ),
+                    revision INTEGER NOT NULL
+                        CHECK (revision >= 1),
+                    created_at INTEGER NOT NULL
+                        CHECK (created_at >= 0),
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_workspace_audit_owner
+                ON workspace_audit_events(user_id, id DESC)
+            """)
+
+            connection.execute("""
+                CREATE TRIGGER workspace_audit_insert
+                AFTER INSERT ON workspace_records
+                BEGIN
+                    INSERT INTO workspace_audit_events (
+                        user_id, workspace, record_id,
+                        event_type, revision, created_at
+                    )
+                    VALUES (
+                        NEW.user_id, NEW.workspace, NEW.id,
+                        'created', NEW.revision,
+                        CAST(strftime('%s', 'now') AS INTEGER)
+                    );
+                END
+            """)
+
+            connection.execute("""
+                CREATE TRIGGER workspace_audit_update
+                AFTER UPDATE ON workspace_records
+                BEGIN
+                    INSERT INTO workspace_audit_events (
+                        user_id, workspace, record_id,
+                        event_type, revision, created_at
+                    )
+                    VALUES (
+                        NEW.user_id, NEW.workspace, NEW.id,
+                        'updated', NEW.revision,
+                        CAST(strftime('%s', 'now') AS INTEGER)
+                    );
+                END
+            """)
+
+            connection.execute("""
+                CREATE TRIGGER workspace_audit_delete
+                AFTER DELETE ON workspace_records
+                BEGIN
+                    INSERT INTO workspace_audit_events (
+                        user_id, workspace, record_id,
+                        event_type, revision, created_at
+                    )
+                    SELECT
+                        OLD.user_id, OLD.workspace, OLD.id,
+                        'deleted', OLD.revision,
+                        CAST(strftime('%s', 'now') AS INTEGER)
+                    WHERE EXISTS (
+                        SELECT 1 FROM users
+                        WHERE id = OLD.user_id
+                    );
+                END
+            """)
+
+            connection.execute("PRAGMA user_version = 6")

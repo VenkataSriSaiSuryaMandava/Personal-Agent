@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+import unicodedata
 from typing import Literal
 
 from pydantic import (
@@ -95,7 +96,7 @@ class WorkspaceRecord(BaseModel):
 class WorkspaceUpdate(WorkspaceRecord):
     expected_revision: int = Field(
         ge=1,
-        le=9223372036854775807,
+        le=9007199254740991,
     )
 
 
@@ -113,15 +114,62 @@ def validate_record(
     if not record.title.strip():
         raise ValueError("Title is required")
 
+    for text in (
+        record.title,
+        record.status,
+        record.notes,
+        record.detail,
+        record.reference,
+        record.scheduled_at,
+    ):
+        # Reject invalid Unicode, embedded nulls and
+        # non-text control characters.
+        text.encode("utf-8", errors="strict")
+
+        if any(
+            unicodedata.category(character) == "Cc"
+            and character not in "\\n\\r\\t"
+            for character in text
+        ):
+            raise ValueError("Invalid text character")
+
+    if any(
+        character in record.title
+        for character in ("\\n", "\\r", "\\t")
+    ):
+        raise ValueError("Title must be single-line")
+
     if record.scheduled_at:
         value = datetime.fromisoformat(
             record.scheduled_at
         )
 
-        if value.tzinfo is None:
+        if (
+            value.tzinfo is None
+            or value.utcoffset() is None
+        ):
             raise ValueError(
                 "Timezone is required"
             )
+
+        try:
+            normalized_date = value.astimezone(
+                timezone.utc
+            )
+        except (OverflowError, ValueError):
+            raise ValueError(
+                "Invalid event date"
+            ) from None
+
+        if not 1900 <= normalized_date.year <= 9999:
+            raise ValueError("Invalid event year")
+
+        record = record.model_copy(
+            update={
+                "scheduled_at":
+                    normalized_date.isoformat()
+            }
+        )
 
     if (
         workspace == "calendar"

@@ -217,6 +217,7 @@ def test_migration_preserves_owner_and_settings(db):
     # Reconstruct the previous schema using test data.
     with connect(db) as connection:
         connection.execute("DROP TABLE workspace_records")
+        connection.execute("DROP TABLE workspace_audit_events")
         connection.execute(
             "DROP TABLE conversation_turns"
         )
@@ -243,7 +244,7 @@ def test_migration_preserves_owner_and_settings(db):
             "SELECT COUNT(*) FROM users"
         ).fetchone()[0]
 
-    assert version == 5
+    assert version == 6
     assert owner_count == 1
 
 
