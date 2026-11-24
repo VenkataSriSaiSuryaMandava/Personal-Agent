@@ -1,6 +1,6 @@
 FROM node:24-bookworm-slim AS frontend-build
 WORKDIR /build/frontend
-ENV NEXT_TELEMETRY_DISABLED=1 NEXT_PUBLIC_AEGIS_DEMO=1
+ENV NEXT_TELEMETRY_DISABLED=1 AEGIS_DOCKER_BUILD=1
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./

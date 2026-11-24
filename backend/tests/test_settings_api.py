@@ -137,6 +137,7 @@ def test_get_settings(settings_client):
         "response_style",
         "cloud_enabled",
         "emergency_stop",
+        "retain_conversations",
     }
 
     assert data["security_enforcement_active"] is True
@@ -227,7 +228,7 @@ def test_no_op_update(settings_client):
     {"primary_provider": "groq"},
     {"fallback_provider": "gemini"},
     {"fallback_enabled": True},
-    {"retain_conversations": True},
+    {"retain_conversations": "true"},
     {},
 ])
 def test_invalid_or_unimplemented_changes(
@@ -534,7 +535,7 @@ def test_storage_status(settings_client):
 
     data = response.json()
 
-    assert data["schema_version"] == 3
+    assert data["schema_version"] == 4
     assert data["integrity"] == "ok"
     assert data["local_only"] is True
     assert data["encrypted_by_application"] is False
@@ -577,3 +578,26 @@ def test_no_private_database_changes_during_tests(
     assert settings_api.service.path == path
 
     assert client.get(BASE).status_code == 200
+
+
+def test_retention_preference(settings_client):
+    client, path = settings_client
+
+    assert load_settings(path).settings.retain_conversations is False
+
+    response = patch(
+        client,
+        {"retain_conversations": True},
+    )
+
+    assert response.status_code == 200
+    assert load_settings(path).settings.retain_conversations is True
+
+    response = patch(
+        client,
+        {"retain_conversations": False},
+        2,
+    )
+
+    assert response.status_code == 200
+    assert load_settings(path).settings.retain_conversations is False

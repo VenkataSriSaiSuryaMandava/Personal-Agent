@@ -54,6 +54,7 @@ const SECTIONS = [
 
 
 type Props = {
+  guest?: boolean;
   section: SettingsSection;
   onSectionChange: (section: SettingsSection) => void;
   snapshot: SettingsSnapshot;
@@ -113,6 +114,7 @@ function formatTime(seconds: number) {
 }
 
 function GeneralSettings({
+  guest,
   snapshot,
   busy,
   onSave,
@@ -146,7 +148,9 @@ function GeneralSettings({
     <section className="panel as-panel">
       <h2>General preferences</h2>
       <p className="as-description">
-        Personalize your workspace. Changes are stored locally.
+        {guest
+          ? "Personalize this preview. Changes are temporary."
+          : "Personalize your workspace. Changes are stored locally."}
       </p>
 
       <div className="as-field">
@@ -178,7 +182,10 @@ function GeneralSettings({
         <label htmlFor="aegis-startup">
           Startup workspace
         </label>
-        <p>Choose which page opens after signing in.</p>
+        <p>
+          Saved workspace preference.
+          Fresh Owner Login always opens Overview.
+        </p>
 
         <select
           id="aegis-startup"
@@ -378,7 +385,7 @@ function ProviderSettings({
 }
 
 type SecurityField =
-  keyof SecurityPreferences;
+  "cloud_enabled" | "emergency_stop";
 
 function SecurityControl({
   title,
@@ -568,6 +575,7 @@ function SecuritySettings({
 }
 
 function PrivacySettings({
+  guest,
   snapshot,
   busy,
   onSave,
@@ -601,10 +609,48 @@ function PrivacySettings({
 
       <SettingRow
         title="Conversation history"
-        description="Saved conversations are not implemented yet."
+        description="Save completed conversations to the private SQLite database on this device."
       >
-        <Status>Not available</Status>
+        <button
+          type="button"
+          role="switch"
+          aria-label="Conversation history"
+          aria-checked={snapshot.settings.retain_conversations}
+          className="as-toggle"
+          data-on={snapshot.settings.retain_conversations}
+          disabled={
+            guest || busy ||
+            !snapshot.editable_fields.includes(
+              "retain_conversations"
+            )
+          }
+          onClick={() => {
+            const enabled =
+              !snapshot.settings.retain_conversations;
+
+            if (enabled && !window.confirm(
+              "Save future conversations locally? Existing saved history remains until deleted."
+            )) return;
+
+            void onSave({
+              retain_conversations: enabled,
+            });
+          }}
+        >
+          <span className="as-toggle-thumb" />
+        </button>
+        <Status>
+          {snapshot.settings.retain_conversations
+            ? "Enabled"
+            : "Disabled"}
+        </Status>
       </SettingRow>
+
+      <Notice>
+        {guest
+          ? "Saved history requires Owner access."
+          : "Disabling history stops new saves. Previously saved conversations can still be reopened or deleted. Local storage is not application-encrypted."}
+      </Notice>
     </section>
   );
 }
@@ -672,9 +718,7 @@ export default function SettingsWorkspace(
   props: Props & { guest?: boolean }
 ) {
   const guest = props.guest === true;
-  const safeProps: Props = guest
-    ? { ...props, busy: true }
-    : props;
+  const safeProps: Props = props;
   const {
     snapshot,
     busy,
@@ -800,7 +844,7 @@ export default function SettingsWorkspace(
 
             <button
               className="secondary-button"
-              disabled={guest || busy || auditBusy}
+              disabled={busy || auditBusy}
               onClick={async () => {
                 if (await props.onReload()) {
                   setRefresh(value => value + 1);
@@ -811,6 +855,14 @@ export default function SettingsWorkspace(
               Reload settings
             </button>
           </div>
+
+          {guest && (
+            <Notice>
+              Guest preferences are temporary.
+              Live AI, private settings, credentials and
+              security changes require Owner access.
+            </Notice>
+          )}
 
           {diagnosticError && (
             <p className="as-error" role="alert">
