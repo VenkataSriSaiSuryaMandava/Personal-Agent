@@ -193,7 +193,7 @@ def test_environment_restriction_wins(
     {"emergency_stop": None},
     {"primary_provider": "groq"},
     {"fallback_enabled": True},
-    {"retain_conversations": True},
+    {"retain_conversations": "true"},
 ])
 def test_invalid_security_changes(secure_runtime, changes):
     client, path = secure_runtime

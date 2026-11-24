@@ -35,6 +35,7 @@ GENERAL_FIELDS = frozenset({
 SECURITY_FIELDS = frozenset({
     "cloud_enabled",
     "emergency_stop",
+    "retain_conversations",
 })
 
 EDITABLE_FIELDS = GENERAL_FIELDS | SECURITY_FIELDS
