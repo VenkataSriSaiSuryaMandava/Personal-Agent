@@ -1,5 +1,3 @@
-import os
-
 from pathlib import Path
 
 from aegis.schemas.settings import (
@@ -11,7 +9,10 @@ from aegis.schemas.settings import (
     StorageResponse,
 )
 
-from aegis.services.inference import ALLOWED_MODEL
+from aegis.models.registry import (
+    PROVIDERS,
+    provider_diagnostics,
+)
 
 from aegis.storage.database import DATABASE_PATH, connect
 from aegis.storage.migrations import SCHEMA_VERSION
@@ -132,46 +133,16 @@ class SettingsService:
         snapshot = load_settings(self.path)
         preferences = snapshot.settings
 
-        gemini_configured = bool(
-            os.getenv("GEMINI_API_KEY", "").strip()
-        )
-
-        model_valid = (
-            os.getenv("GEMINI_MODEL", ALLOWED_MODEL)
-            == ALLOWED_MODEL
-        )
-
-        if not gemini_configured:
-            gemini_status = "not_configured"
-        elif not model_valid:
-            gemini_status = "invalid_configuration"
-        else:
-            gemini_status = "configured"
-
-        groq_configured = bool(
-            os.getenv("GROQ_API_KEY", "").strip()
-        )
-
         return ProvidersResponse(
             providers=[
                 ProviderStatus(
-                    provider="gemini",
-                    configured=gemini_configured,
-                    implemented=True,
-                    model=ALLOWED_MODEL,
-                    status=gemini_status,
-                ),
-                ProviderStatus(
-                    provider="groq",
-                    configured=groq_configured,
-                    implemented=False,
-                    model=None,
-                    status="not_implemented",
-                ),
+                    **provider_diagnostics(identifier)
+                )
+                for identifier in PROVIDERS
             ],
             primary_provider=preferences.primary_provider,
             fallback_provider=preferences.fallback_provider,
-            fallback_enabled=preferences.fallback_enabled,
+            fallback_enabled=False,
             fallback_implemented=False,
         )
 

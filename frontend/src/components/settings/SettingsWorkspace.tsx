@@ -313,12 +313,13 @@ function ProviderSettings({
     <section className="panel as-panel">
       <h2>AI providers</h2>
       <p className="as-description">
-        Manage provider availability and model preferences.
+        View the authorized AI model and provider configuration.
       </p>
 
       <Notice>
-        Credentials stay on the backend. Configuration status
-        does not verify API availability or remaining quota.
+        Gemini is the only active AI provider. Credentials stay on
+        the backend. Configuration status does not verify
+        live API availability or remaining quota.
       </Notice>
 
       {!providers ? (
@@ -352,7 +353,7 @@ function ProviderSettings({
               <SettingRow title="Model">
                 {provider.model ?? "Not available"}
               </SettingRow>
-              <SettingRow title="Connection tested">
+              <SettingRow title="Live connection verified">
                 {provider.live_verified ? "Yes" : "No"}
               </SettingRow>
             </article>
@@ -361,24 +362,24 @@ function ProviderSettings({
       )}
 
       <SettingRow
-        title="Preferred primary provider"
-        description="Stored preference"
+        title="Stored primary provider"
+        description="Gemini is the only authorized runtime provider."
       >
         {snapshot.settings.primary_provider}
       </SettingRow>
 
       <SettingRow
-        title="Preferred fallback provider"
-        description="Provider routing is not implemented yet."
+        title="Future fallback provider"
+        description="Secondary provider integration is deferred."
       >
         {snapshot.settings.fallback_provider}
       </SettingRow>
 
       <SettingRow
         title="Automatic fallback"
-        description="Available after the multi-provider checkpoint."
+        description="No automatic transmission to another provider."
       >
-        <Status>Not implemented</Status>
+        <Status>Disabled</Status>
       </SettingRow>
     </section>
   );
