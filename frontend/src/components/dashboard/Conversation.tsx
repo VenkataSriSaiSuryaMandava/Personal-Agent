@@ -28,12 +28,44 @@ function selectContext(turns: Turn[], draft: string, include: boolean): Turn[] {
   return result;
 }
 
-function errorMessage(status: number) {
-  if (status === 401) return "Your session expired. Sign in again.";
-  if (status === 403) return "Cloud chat is disabled or this content was blocked by privacy policy. Review the text and server settings.";
-  if (status === 429) return "AI request limit reached. Please try again later.";
-  if (status === 413 || status === 422) return "Your message or context is invalid or too long.";
-  return "Gemini or the local backend is unavailable. No automatic retry was performed.";
+function errorMessage(status: number, detail?: unknown) {
+  if (status === 401) {
+    return "Your session expired. Sign in again.";
+  }
+
+  if (status === 403) {
+    return "Cloud chat is disabled or this content was blocked by privacy policy. Review the text and server settings.";
+  }
+
+  if (status === 429) {
+    return detail === "Provider quota exceeded"
+      ? "Gemini's usage limit has been reached. Try again later."
+      : "AI request limit reached. Please try again later.";
+  }
+
+  if (status === 413 || status === 422) {
+    return "Your message or context is invalid or too long.";
+  }
+
+  if (status === 504) {
+    return "Gemini did not respond in time. Your message has been preserved.";
+  }
+
+  if (status === 503) {
+    if (detail === "Provider temporarily unavailable") {
+      return "Gemini is temporarily unavailable. Your message has been preserved. Try again shortly.";
+    }
+
+    if (detail === "Usage storage unavailable") {
+      return "Local AI usage tracking is unavailable. Your message has been preserved.";
+    }
+
+    if (detail === "Local backend is unavailable") {
+      return "The local backend is unavailable or the request timed out. Check the connection before retrying.";
+    }
+  }
+
+  return "Unable to generate a response. Your message has been preserved.";
 }
 
 export default function Conversation({ guest = false }: { guest?: boolean }) {
@@ -86,7 +118,13 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
         body: JSON.stringify({ message: text, history, classification: "public", approved: true }),
       });
       if (response.status === 401) window.dispatchEvent(new Event("aegis-session-expired"));
-      if (!response.ok) throw new Error(errorMessage(response.status));
+      if (!response.ok) {
+        const failure = await response.json().catch(() => null);
+
+        throw new Error(
+          errorMessage(response.status, failure?.detail)
+        );
+      }
       const data = await response.json();
       if (data.status !== "completed" || data.provider !== "gemini" || data.model !== "gemini-3.1-flash-lite" ||
           data.transmitted !== true || data.executed !== false || typeof data.message !== "string" || !data.message.trim()) {

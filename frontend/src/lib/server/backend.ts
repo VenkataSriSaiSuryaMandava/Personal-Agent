@@ -79,9 +79,39 @@ export async function callBackend(
     );
 
     if (!response.ok) {
+      let detail = "Backend request rejected";
+
+      if (endpoint === "/api/v1/conversation") {
+        const allowed: Record<number, readonly string[]> = {
+          403: ["Conversation denied by policy"],
+          429: [
+            "Provider quota exceeded",
+            "Inference usage limit reached",
+          ],
+          503: [
+            "Provider temporarily unavailable",
+            "Usage storage unavailable",
+            "AI unavailable",
+          ],
+          504: ["Provider request timed out"],
+        };
+
+        const body = await response.json().catch(() => null);
+
+        if (
+          typeof body?.detail === "string" &&
+          allowed[response.status]?.includes(body.detail)
+        ) {
+          detail = body.detail;
+        }
+      }
+
       return NextResponse.json(
-        { detail: "Backend request rejected" },
-        { status: response.status }
+        { detail },
+        {
+          status: response.status,
+          headers: { "Cache-Control": "no-store" },
+        }
       );
     }
 

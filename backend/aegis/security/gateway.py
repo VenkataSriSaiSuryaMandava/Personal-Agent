@@ -1,3 +1,7 @@
+import logging
+import time
+import urllib.error
+
 from dataclasses import dataclass
 from typing import Callable
 
@@ -21,6 +25,21 @@ class GatewayDenied(Exception):
 
 class ProviderUnavailable(Exception):
     """The authorized provider could not complete the request."""
+
+
+class ProviderQuotaExceeded(ProviderUnavailable):
+    """The external provider rejected the request due to quota."""
+
+
+class ProviderTimedOut(ProviderUnavailable):
+    """The provider did not respond within the request timeout."""
+
+
+class ProviderTemporarilyUnavailable(ProviderUnavailable):
+    """The external provider returned a temporary service failure."""
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -91,29 +110,98 @@ class OutboundGateway:
         ))
         if decision.decision is not Decision.ALLOW:
             raise GatewayDenied(decision.reason)
-        return self._complete_prompt(prompt)
+        return self._complete_prompt(prompt, retry_503=True)
 
-    def _complete_prompt(self, prompt: str) -> str:
-        if self._before_request is not None:
-            self._before_request()
+    def _complete_prompt(
+        self,
+        prompt: str,
+        retry_503: bool = False,
+    ) -> str:
 
-        try:
-            response = self._provider.complete(prompt)
-        except Exception:
-            # Do not expose raw provider errors, keys or prompts.
-            raise ProviderUnavailable(
-                "AI provider request failed"
-            ) from None
+        attempts = 2 if retry_503 else 1
+        started = time.monotonic()
 
-        if (
-            not isinstance(response, str)
-            or not response.strip()
-            or len(response) > 20000
-        ):
-            raise ProviderUnavailable(
-                "Invalid provider response"
-            )
+        for attempt in range(attempts):
 
-        # Provider output is untrusted text.
-        # It must not be executed as a command.
-        return response
+            # Recheck permissions and reserve usage before
+            # every outbound request, including retries.
+            if self._before_request is not None:
+                self._before_request()
+
+            try:
+                response = self._provider.complete(prompt)
+
+            except urllib.error.HTTPError as error:
+                status = error.code
+                error.close()
+
+                logger.warning(
+                    "Provider HTTP failure: status=%s attempt=%s",
+                    status,
+                    attempt + 1,
+                )
+
+                if status == 429:
+                    raise ProviderQuotaExceeded(
+                        "AI provider quota exceeded"
+                    ) from None
+
+                if status == 503:
+                    if (
+                        attempt + 1 < attempts
+                        and time.monotonic() - started < 7
+                    ):
+                        time.sleep(1)
+                        continue
+
+                    raise ProviderTemporarilyUnavailable(
+                        "AI provider temporarily unavailable"
+                    ) from None
+
+                raise ProviderUnavailable(
+                    "AI provider request failed"
+                ) from None
+
+            except TimeoutError:
+                logger.warning("Provider request timed out")
+
+                raise ProviderTimedOut(
+                    "AI provider request timed out"
+                ) from None
+
+            except urllib.error.URLError as error:
+                if isinstance(error.reason, TimeoutError):
+                    raise ProviderTimedOut(
+                        "AI provider request timed out"
+                    ) from None
+
+                logger.warning("Provider network failure")
+
+                raise ProviderUnavailable(
+                    "AI provider network unavailable"
+                ) from None
+
+            except Exception:
+                # Never expose raw provider exceptions.
+                logger.warning("Provider request failed")
+
+                raise ProviderUnavailable(
+                    "AI provider request failed"
+                ) from None
+
+            if (
+                not isinstance(response, str)
+                or not response.strip()
+                or len(response) > 20000
+            ):
+                logger.warning("Invalid provider response")
+
+                raise ProviderUnavailable(
+                    "Invalid provider response"
+                )
+
+            return response
+
+        raise ProviderUnavailable(
+            "AI provider request failed"
+        )
