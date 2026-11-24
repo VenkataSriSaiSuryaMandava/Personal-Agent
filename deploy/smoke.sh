@@ -27,9 +27,11 @@ done
 status() { curl -sS --max-time 10 -o /dev/null -w '%{http_code}' -X "$1" "$base$2"; }
 test "$(status GET '/api/demo/example?id=invalid')" = 400
 test "$(status GET '/api/demo/example?id=search&id=project')" = 400
-for path in /api/agent/status /api/auth/session; do test "$(status GET "$path")" = 403; done
+for path in /api/agent/status /api/auth/session /api/agent/settings /api/agent/settings/providers /api/agent/settings/storage /api/agent/settings/audit; do test "$(status GET "$path")" = 403; done
 for path in /api/agent/chat /api/agent/inference /api/agent/conversation /api/auth/login /api/auth/logout; do test "$(status POST "$path")" = 403; done
 test "$(status POST '/api/demo/example')" = 405
+test "$(status PATCH '/api/agent/settings')" = 403
+test "$(status POST '/api/agent/settings/reset')" = 403
 # Private app source, key and gateway token must not be present in the runtime.
 docker exec "$name" sh -c 'test ! -e /app/demo/aegis && test -z "${GEMINI_API_KEY:-}" && test -z "${AEGIS_GATEWAY_TOKEN:-}" && test "$(id -u)" != 0'
 test "$(docker inspect --format '{{.State.OOMKilled}}' "$name")" = false
