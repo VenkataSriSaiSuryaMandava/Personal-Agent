@@ -1,6 +1,12 @@
 import os
 
 from aegis.models.gemini import GeminiProvider
+from aegis.models.registry import (
+    ACTIVE_PROVIDER,
+    GEMINI_MODEL,
+    create_provider,
+    resolve_model,
+)
 
 from aegis.schemas.inference import (
     InferenceRequest,
@@ -14,11 +20,10 @@ from aegis.security.gateway import (
     GatewayContext,
     GatewayDenied,
     OutboundGateway,
-    ProviderUnavailable,
 )
 
 
-ALLOWED_MODEL = "gemini-3.1-flash-lite"
+ALLOWED_MODEL = GEMINI_MODEL
 
 
 def run_inference(
@@ -43,36 +48,16 @@ def run_inference(
             "Explicit approval is required"
         )
 
-    key = os.getenv("GEMINI_API_KEY", "")
-
-    model = (
-        requested_model
-        if requested_model is not None
-        else os.getenv("GEMINI_MODEL", ALLOWED_MODEL)
+    model = resolve_model(
+        ACTIVE_PROVIDER,
+        requested_model,
     )
 
-    if model != ALLOWED_MODEL:
-        raise GatewayDenied(
-            "Model is not authorized"
-        )
-
-    if not key.strip():
-        raise ProviderUnavailable(
-            "AI provider is not configured"
-        )
-
-    try:
-
-        provider = GeminiProvider(
-            api_key=key,
-            model=model,
-        )
-
-    except ValueError:
-
-        raise ProviderUnavailable(
-            "Invalid provider configuration"
-        ) from None
+    provider = create_provider(
+        ACTIVE_PROVIDER,
+        model,
+        factory=GeminiProvider,
+    )
 
     def reserve_request():
         runtime_controls.require_cloud()
