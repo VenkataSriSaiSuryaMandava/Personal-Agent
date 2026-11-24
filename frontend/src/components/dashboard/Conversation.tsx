@@ -4,6 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Copy, Check, LoaderCircle, Plus, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  listConversations,
+  openConversation,
+  renameConversation,
+  deleteConversation,
+  validConversationId,
+  type ConversationSummary,
+} from "@/lib/conversations";
+
 import "./Conversation.css";
 
 type Turn = { user: string; assistant: string };
@@ -47,6 +56,10 @@ function errorMessage(status: number, detail?: unknown) {
     return "Your message or context is invalid or too long.";
   }
 
+  if (status === 409 || status === 404) {
+    return "Saved conversation changed. Reopen it or start a new chat.";
+  }
+
   if (status === 504) {
     return "Gemini did not respond in time. Your message has been preserved.";
   }
@@ -68,8 +81,32 @@ function errorMessage(status: number, detail?: unknown) {
   return "Unable to generate a response. Your message has been preserved.";
 }
 
-export default function Conversation({ guest = false }: { guest?: boolean }) {
+export default function Conversation({
+  guest = false,
+  retain = false,
+}: {
+  guest?: boolean;
+  retain?: boolean;
+}) {
   const [turns, setTurns] = useState<Turn[]>([]);
+  const [savedChats, setSavedChats] =
+    useState<ConversationSummary[]>([]);
+
+  const [activeId, setActiveId] =
+    useState<string | null>(null);
+
+  const [savedCount, setSavedCount] = useState(0);
+
+  const [historyBusy, setHistoryBusy] = useState(false);
+
+  const [historyError, setHistoryError] = useState("");
+
+  const [saveNotice, setSaveNotice] = useState("");
+
+  const [nextOffset, setNextOffset] =
+    useState<number | null>(null);
+
+  const historyOperation = useRef(false);
   const [draft, setDraft] = useState("");
   const [include, setInclude] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -81,12 +118,157 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
   const controller = useRef<AbortController | null>(null);
   const text = draft.trim();
   const history = selectContext(turns, text, include);
-  const ready = Boolean(!guest && text && text.length <= 4000 && bytes(text) <= 16000 && !busy);
+  const ready = Boolean(!guest && text && text.length <= 4000 && bytes(text) <= 16000 && !busy && !historyBusy);
 
   useEffect(() => {
     if (messages.current) messages.current.scrollTop = messages.current.scrollHeight;
   }, [turns, pending]);
   useEffect(() => () => controller.current?.abort(), []);
+
+  useEffect(() => {
+    if (guest) return;
+
+    let active = true;
+
+    listConversations()
+      .then(result => {
+        if (!active) return;
+
+        setSavedChats(result.conversations);
+        setNextOffset(result.next_offset);
+        setHistoryError("");
+      })
+      .catch(() => {
+        if (active) {
+          setHistoryError(
+            "Unable to load saved conversations."
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [guest]);
+
+  async function refreshHistory(offset = 0) {
+    if (guest) return;
+
+    try {
+      const result = await listConversations(offset);
+
+      setSavedChats(previous => {
+        if (offset === 0) return result.conversations;
+
+        const known = new Set(
+          previous.map(chat => chat.id)
+        );
+
+        return [
+          ...previous,
+          ...result.conversations.filter(
+            chat => !known.has(chat.id)
+          ),
+        ];
+      });
+
+      setNextOffset(result.next_offset);
+      setHistoryError("");
+
+    } catch {
+      setHistoryError(
+        "Unable to refresh conversation history."
+      );
+    }
+  }
+
+  async function manageHistory(
+    action: () => Promise<void>
+  ) {
+    if (
+      guest ||
+      busyRef.current ||
+      historyOperation.current
+    ) return;
+
+    historyOperation.current = true;
+    setHistoryBusy(true);
+    setHistoryError("");
+
+    try {
+      await action();
+    } catch {
+      setHistoryError(
+        "Unable to complete the history operation."
+      );
+    } finally {
+      historyOperation.current = false;
+      setHistoryBusy(false);
+    }
+  }
+
+  function confirmDiscard() {
+    return !(
+      draft.trim() ||
+      turns.length > savedCount
+    ) || window.confirm(
+      "Discard unsaved messages or draft?"
+    );
+  }
+
+  function reopen(id: string) {
+    if (!confirmDiscard()) return;
+
+    void manageHistory(async () => {
+      const result = await openConversation(id);
+
+      setTurns(result.turns.map(turn => ({
+        user: turn.user,
+        assistant: turn.assistant,
+      })));
+
+      setActiveId(result.id);
+      setSavedCount(result.turns.length);
+      setSaveNotice("");
+      setCopied(null);
+      update("");
+    });
+  }
+
+  function rename(chat: ConversationSummary) {
+    const title = window.prompt(
+      "Conversation title",
+      chat.title
+    )?.trim();
+
+    if (!title || title.length > 120) return;
+
+    void manageHistory(async () => {
+      await renameConversation(chat.id, title);
+      await refreshHistory();
+    });
+  }
+
+  function remove(chat: ConversationSummary) {
+    if (!window.confirm(
+      "Delete this conversation and its saved messages?"
+    )) return;
+
+    void manageHistory(async () => {
+      await deleteConversation(chat.id);
+
+      if (activeId === chat.id) {
+        setTurns([]);
+        setActiveId(null);
+        setSavedCount(0);
+        setSaveNotice("");
+        setCopied(null);
+        update("");
+      }
+
+      await refreshHistory();
+    });
+  }
 
   function update(value: string) {
     setDraft(value);
@@ -94,18 +276,32 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
   }
 
   function newChat() {
-    if (busyRef.current) return;
+    if (
+      busyRef.current ||
+      historyOperation.current ||
+      !confirmDiscard()
+    ) return;
+
     setTurns([]);
+    setActiveId(null);
+    setSavedCount(0);
+    setSaveNotice("");
     update("");
     setCopied(null);
   }
 
   async function send() {
-    if (guest || !ready || busyRef.current) return;
+    if (
+      guest || !ready ||
+      busyRef.current || historyOperation.current
+    ) return;
     busyRef.current = true;
     setBusy(true);
     setPending(text);
     setError("");
+    const persist =
+      retain && turns.length === savedCount;
+
     const abort = new AbortController();
     controller.current = abort;
     const timeout = window.setTimeout(() => abort.abort(), 45000);
@@ -115,7 +311,15 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
         signal: abort.signal,
-        body: JSON.stringify({ message: text, history, classification: "public", approved: true }),
+        body: JSON.stringify({
+          message: text,
+          history,
+          classification: "public",
+          approved: true,
+          persist,
+          conversation_id: persist ? activeId : null,
+          expected_turn_count: persist ? savedCount : 0,
+        }),
       });
       if (response.status === 401) window.dispatchEvent(new Event("aegis-session-expired"));
       if (!response.ok) {
@@ -132,6 +336,26 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
       }
       setTurns(previous => [...previous, { user: text, assistant: data.message }]);
       update("");
+
+      if (
+        persist &&
+        data.persisted === true &&
+        validConversationId(data.conversation_id)
+      ) {
+        setActiveId(data.conversation_id);
+        setSavedCount(previous => previous + 1);
+        setSaveNotice("Conversation saved locally.");
+
+        await refreshHistory();
+
+      } else {
+        setSaveNotice(
+          persist
+            ? "Response received, but not saved. Refresh history before retrying storage."
+            : "This response is not saved. Start a new chat to resume saving."
+        );
+      }
+
     } catch (failure) {
       setError(abort.signal.aborted ? "Request ended or timed out. Gemini may still have received it. Check before retrying." :
         failure instanceof Error ? failure.message : "Unable to generate a response.");
@@ -154,12 +378,112 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
   }
 
   return (
+    <div className="ac-history-layout">
+      {!guest && (
+        <aside
+          className="ac-history"
+          aria-label="Saved conversations"
+        >
+          <div className="ac-history-heading">
+            <strong>Conversations</strong>
+            <button
+              type="button"
+              className="ac-button"
+              disabled={busy || historyBusy}
+              onClick={newChat}
+            >
+              <Plus size={14}/> New
+            </button>
+          </div>
+
+          <p className="ac-history-status">
+            {retain
+              ? "Local history enabled"
+              : "History saving disabled"}
+          </p>
+
+          <button
+            type="button"
+            className="ac-button"
+            disabled={busy || historyBusy}
+            onClick={() => void manageHistory(
+              () => refreshHistory()
+            )}
+          >
+            Refresh history
+          </button>
+
+          {historyError && (
+            <p className="ac-error" role="alert">
+              {historyError}
+            </p>
+          )}
+
+          {!savedChats.length && !historyError && (
+            <p className="ac-history-status">
+              No saved conversations yet.
+            </p>
+          )}
+
+          <div className="ac-history-list">
+            {savedChats.map(chat => (
+              <div
+                key={chat.id}
+                className="ac-history-item"
+                data-active={activeId === chat.id}
+              >
+                <button
+                  type="button"
+                  className="ac-history-title"
+                  disabled={busy || historyBusy}
+                  onClick={() => reopen(chat.id)}
+                  title={chat.title}
+                >
+                  {chat.title}
+                </button>
+
+                <div className="ac-history-actions">
+                  <button
+                    type="button"
+                    disabled={busy || historyBusy}
+                    onClick={() => rename(chat)}
+                  >
+                    Rename
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={busy || historyBusy}
+                    onClick={() => remove(chat)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {nextOffset !== null && (
+            <button
+              type="button"
+              className="ac-button"
+              disabled={busy || historyBusy}
+              onClick={() => void manageHistory(
+                () => refreshHistory(nextOffset)
+              )}
+            >
+              Load more
+            </button>
+          )}
+        </aside>
+      )}
+
     <section className="ac-panel" aria-label="Aegis conversation">
       <header className="ac-header">
         <div className="ac-brand"><span className="ac-logo"><Sparkles size={22} /></span><div>
           <h2>Aegis Assistant</h2><p>{guest ? "AI unavailable in Guest mode" : "Gemini 3.1 Flash-Lite · Cloud assistant"}</p>
         </div></div>
-        <button type="button" className="ac-button" disabled={busy} onClick={newChat}><Plus size={16}/> New chat</button>
+        <button type="button" className="ac-button" disabled={busy || historyBusy} onClick={newChat}><Plus size={16}/> New chat</button>
       </header>
       <div className="ac-scroll" ref={messages} aria-live="polite" aria-busy={busy}>
         {turns.length === 0 && !pending && <div className="ac-welcome">
@@ -167,7 +491,7 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
           <span className="ac-eyebrow">YOUR INTELLIGENCE WORKSPACE</span>
           <h1>What can I help you with?</h1>
           <p>Explore ideas, understand concepts, solve problems and write better code.</p>
-          <div className="ac-suggestions">{SUGGESTIONS.map(([title, prompt]) => <button key={title} type="button" disabled={busy} onClick={() => update(prompt)}>
+          <div className="ac-suggestions">{SUGGESTIONS.map(([title, prompt]) => <button key={title} type="button" disabled={busy || historyBusy} onClick={() => update(prompt)}>
             <strong>{title}</strong><span>{prompt}</span>
           </button>)}</div>
         </div>}
@@ -184,7 +508,7 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
         {pending && <article className="ac-turn"><div className="ac-user"><span>You</span><p>{pending}</p></div><div className="ac-loading" role="status"><LoaderCircle size={18}/> Generating response…</div></article>}
       </div>
       <form className="ac-composer" onSubmit={event => { event.preventDefault(); void send(); }}>
-        <textarea aria-label="Message Aegis" placeholder={guest ? "Try the composer — AI requires Owner access" : "Ask Aegis anything non-private…"} value={draft} maxLength={4000} rows={3} disabled={busy} onChange={event => update(event.target.value)} onKeyDown={event => {
+        <textarea aria-label="Message Aegis" placeholder={guest ? "Try the composer — AI requires Owner access" : "Ask Aegis anything non-private…"} value={draft} maxLength={4000} rows={3} disabled={busy || historyBusy} onChange={event => update(event.target.value)} onKeyDown={event => {
           if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); }
         }}/>
         <div className="ac-privacy-bar">
@@ -193,12 +517,18 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
             <input
               type="checkbox"
               checked={include}
-              disabled={busy}
+              disabled={busy || historyBusy}
               onChange={event => setInclude(event.target.checked)}
             />
             Include recent context
           </label>
         </div>
+        {!guest && saveNotice && (
+          <p className="ac-history-status" role="status">
+            {saveNotice}
+          </p>
+        )}
+
         {error && <p className="ac-error" role="alert">{error}</p>}
         <div className="ac-toolbar"><span>{draft.length}/4000 · Enter to send · Shift+Enter for newline</span>
           <button type="submit" disabled={!ready} className="ac-send" aria-label="Send message to Gemini">{busy ? <LoaderCircle size={18}/> : <ArrowUp size={18}/>} {busy ? "Generating" : "Send"}</button>
@@ -206,5 +536,6 @@ export default function Conversation({ guest = false }: { guest?: boolean }) {
       </form>
       <footer className="ac-footer">Text-only AI · Sending shares your message and enabled context with Gemini · No automatic tool execution</footer>
     </section>
+    </div>
   );
 }

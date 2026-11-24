@@ -19,6 +19,7 @@ export type GeneralPreferences = {
 export type SecurityPreferences = {
   cloud_enabled: boolean;
   emergency_stop: boolean;
+  retain_conversations: boolean;
 };
 
 export type ApplicationSettings = GeneralPreferences & {

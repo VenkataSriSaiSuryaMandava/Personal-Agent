@@ -37,3 +37,18 @@ docker exec "$name" sh -c 'test ! -e /app/demo/aegis && test -z "${GEMINI_API_KE
 test "$(docker inspect --format '{{.State.OOMKilled}}' "$name")" = false
 docker stats --no-stream --format 'Memory usage: {{.MemUsage}}' "$name"
 echo 'Public demo smoke checks passed.'
+
+# Conversation history must remain inaccessible publicly.
+for path in \
+  /api/agent/conversations \
+  /api/agent/conversations/00000000-0000-0000-0000-000000000000
+do
+  test "$(status GET "$path")" = 403
+done
+
+for method in PATCH DELETE
+do
+  test "$(status "$method" '/api/agent/conversations/00000000-0000-0000-0000-000000000000')" = 403
+done
+
+echo 'Public conversation history isolation passed.'
