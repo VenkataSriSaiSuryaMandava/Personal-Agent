@@ -4,13 +4,13 @@ A privacy-first, local-first personal AI assistant designed to bring
 intelligence, productivity, research and task automation into a
 unified workspace.
 
-![Version](https://img.shields.io/badge/MVP-v0.1.0-blue)
+![Version](https://img.shields.io/badge/Version-v0.2.0-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED)
 ![Deployment](https://img.shields.io/badge/Render-Live-success)
-![Tests](https://img.shields.io/badge/Backend_Tests-359-success)
+![Tests](https://img.shields.io/badge/Backend_Tests-520-success)
 
 ## Live Demo
 
@@ -49,11 +49,19 @@ The project prioritizes:
 - Structured Markdown responses.
 - Code blocks, tables and technical explanations.
 - Copy responses and start new conversations.
+- Persistent conversation history with explicit retention.
+- Reopen, rename and delete saved conversations.
+- Restore the active saved conversation after refresh.
+- Gemini quota, timeout and temporary failure handling.
 - Model provider abstraction.
 
 ### Dashboard
 
 - Separate Overview and AI Assistant workspaces.
+- Shared Owner and Guest dashboard components.
+- Server-controlled runtime access selection.
+- Persistent Owner preferences and privacy controls.
+- Temporary Guest preference interactions.
 - Responsive interface with collapsible navigation.
 - Dark and light themes.
 - System status and approval UI.
@@ -81,11 +89,17 @@ The project prioritizes:
 - AI usage tracking when application limits are enabled.
 - Private runtime files stored outside the repository.
 - Restrictive filesystem permissions.
+- SQLite schema v4 conversation storage.
+- Transactional retention enforcement.
+- Owner-scoped conversation history.
+- Database integrity diagnostics.
+- Application-level encryption is not implemented.
 
 ### Deployment
 
 - Multi-stage Docker build.
-- Next.js and FastAPI in one container.
+- Private Docker Compose frontend and backend services.
+- Separate public demo packaged in one container.
 - Separate public demo backend.
 - Non-root container execution.
 - Automated container smoke tests.
@@ -99,7 +113,8 @@ flowchart TD
     A[GitHub Repository] --> B[GitHub Actions]
     B --> C[Protected Main Branch]
     C --> D[Private Local Workspace]
-    C --> E[Render Docker Service]
+    C --> P[Explicit Deployment Promotion]
+    P --> E[Render Docker Service]
 
     D --> F[Next.js - Port 3000]
     F --> G[FastAPI - Port 8000]
@@ -168,7 +183,7 @@ Personal-Agent/
 - Node.js 24.
 - npm.
 - Git.
-- Docker (for public demo testing).
+- Docker Desktop with Docker Compose.
 
 ### Backend Setup
 
@@ -202,50 +217,48 @@ CLI before attempting authenticated access on a fresh installation.
 Never commit runtime credentials or copy the owner database
 into the public deployment.
 
-### Start the Private Backend
+### Start the Private Workspace
 
-For an already configured private runtime:
-
-```bash
-cd backend
-source .venv/bin/activate
-
-set -a
-source "$HOME/Library/Application Support/AegisAI/runtime.env"
-source "$HOME/Library/Application Support/AegisAI/gateway.env"
-set +a
-
-AEGIS_CLOUD_ENABLED=1 \
-AEGIS_CUSTOM_CLOUD_ENABLED=1 \
-AEGIS_UNLIMITED_AI=1 \
-python -m uvicorn aegis.main:app \
-    --host 127.0.0.1 --port 8000
-```
-
-The unlimited flag disables application-level AI quotas,
-not provider quotas. Omit it to retain local usage limits.
-
-### Start the Private Frontend
-
-In a separate terminal:
+For an already configured private Docker runtime:
 
 ```bash
-cd frontend
-
-npm ci
-
-export NEXT_TELEMETRY_DISABLED=1
-export AEGIS_LOCAL_BACKEND=1
-unset AEGIS_PUBLIC_DEMO GEMINI_API_KEY
-
-set -a
-source "$HOME/Library/Application Support/AegisAI/gateway.env"
-set +a
-
-npm run dev -- --hostname 127.0.0.1 --port 3000
+docker compose -f compose.private.yaml up -d --build --wait
+docker compose -f compose.private.yaml ps
 ```
 
 Open http://127.0.0.1:3000.
+
+Daily operation:
+
+```bash
+docker compose -f compose.private.yaml up -d
+docker compose -f compose.private.yaml ps
+docker compose -f compose.private.yaml logs --tail=50
+docker compose -f compose.private.yaml stop
+```
+
+The private database lives in a persistent Docker volume.
+The native macOS database is separate.
+
+Never remove the private Docker volume unintentionally.
+
+### AI and Conversation Privacy
+
+Cloud AI requires runtime authorization and Owner permission.
+
+The AEGIS_UNLIMITED_AI flag disables application quotas,
+not provider quotas or costs.
+
+Conversation retention is disabled by default.
+Enable it through Settings > Privacy.
+
+Disabling retention stops new saves without deleting
+previously saved conversations.
+
+Only saved conversations survive browser refresh.
+Browser session storage remembers only the selected chat ID.
+
+Local database storage is not application-encrypted.
 
 ## Run the Public Demo Locally
 
@@ -270,7 +283,7 @@ No Gemini credentials are required for this demo.
 | Environment | Address |
 |---|---|
 | Private frontend | http://127.0.0.1:3000 |
-| Private backend | http://127.0.0.1:8000 |
+| Private backend | Internal Docker service: backend:8000 |
 | Local Docker demo | http://127.0.0.1:8080 |
 | Hosted public demo | https://aegis-ai-369j.onrender.com |
 
@@ -282,7 +295,8 @@ flowchart LR
     B --> C[Automated CI]
     C --> D[Security Checks]
     D --> E[Merge to Main]
-    E --> F[Render Docker Build]
+    E --> P[Explicit Deployment Promotion]
+    P --> F[Render Docker Build]
     F --> G[Health Check]
     G --> H[Live Deployment]
 ```
@@ -299,8 +313,11 @@ The pipeline includes:
 - Frontend and backend dependency audits.
 - Workflow validation.
 
-Render automatically deploys validated changes from main
-using the After CI Checks Pass setting.
+Render watches the deployment branch using the
+After CI Checks Pass setting.
+
+Merging into main does not publish changes.
+Deployment promotion requires explicit approval.
 
 ## Branch Strategy
 
@@ -335,25 +352,32 @@ not sustained production performance guarantees.
 
 ## Development Roadmap
 
-- [x] Project foundation
-- [x] Dashboard and navigation
-- [x] Model provider integration
-- [x] Local database and migrations
-- [x] Owner authentication
-- [x] Conversational AI
-- [x] Docker containerization
-- [x] Public demo deployment
-- [x] Continuous deployment
-- [ ] Persistent conversation history
-- [ ] Streaming AI responses
-- [ ] Advanced code and mathematical rendering
-- [ ] Memory management
-- [ ] Permission and approval engine
-- [ ] Task planning and execution
-- [ ] Job search assistant
-- [ ] Email and calendar integrations
-- [ ] Browser and research agents
-- [ ] Automated personal workflows
+| Version | Scope |
+|---|---|
+| v0.1.0 | Initial MVP and isolated public demo |
+| v0.2.0 | Owner AI, shared runtime, settings and persistent conversations |
+| v0.3.0 | Basic workspace functionality and optional local AI models |
+| v0.4.0 | Job search workflows |
+| v0.5.0 | Tasks, memory and approval engine |
+| v0.6.0+ | External integrations and controlled automation |
+
+Later roadmap items are planned, not implemented.
+
+## v0.2.0 Release Candidate
+
+- 520 automated backend tests passed.
+- 19 CI checks passed on PRs #46 and #47.
+- 11 conversation end-to-end checks passed.
+- Six additional navigation checks passed.
+- SQLite schema v4 migration and backup verified.
+- Public and private conversation isolation verified.
+- Public Docker smoke-test memory usage: 97.6 MiB.
+
+These are development validation results, not production
+performance guarantees.
+
+The hosted demo remains on the previously published release
+until explicit deployment promotion.
 
 ## Security and Privacy
 
@@ -375,7 +399,7 @@ External actions and autonomous execution are not enabled.
 
 Aegis AI is under active development.
 
-The current MVP demonstrates conversational AI, authenticated
+The v0.2.0 release candidate demonstrates conversational AI, authenticated
 local operation, local persistence, security foundations and a
 reproducible deployment pipeline.
 
