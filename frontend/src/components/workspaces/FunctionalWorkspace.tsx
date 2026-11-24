@@ -20,7 +20,25 @@ import {
   type WorkspaceRecord,
 } from "@/lib/workspaces";
 
+import { EXPERIENCE } from "@/lib/workspace-experience";
+import CalendarBoard from "./CalendarBoard";
+import IntegrationPanel from "./IntegrationPanel";
+import WorkspaceInsights from "./WorkspaceInsights";
+import WorkspaceCollection from "./WorkspaceCollection";
+import MemoryDiagnostics from "./MemoryDiagnostics";
+
 import "./FunctionalWorkspace.css";
+import "./WorkspaceExperience.css";
+
+function currentTimestamp() {
+  return Math.floor(Date.now() / 1000);
+}
+
+function currentLocalDay() {
+  return localDate(
+    new Date().toISOString(),
+  ).slice(0, 10);
+}
 
 function initialInput(
   workspace: RecordWorkspace,
@@ -60,11 +78,14 @@ function localDate(value: string) {
 export default function FunctionalWorkspace({
   workspace,
   guest,
+  onAssistant,
 }: {
   workspace: RecordWorkspace;
   guest: boolean;
+  onAssistant: () => void;
 }) {
   const config = WORKSPACE_CONFIG[workspace];
+  const experience = EXPERIENCE[workspace];
 
   const item = navigation.find(
     entry => entry.id === workspace,
@@ -87,6 +108,19 @@ export default function FunctionalWorkspace({
     useState<number | null>(null);
 
   const [query, setQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [deadline, setDeadline] = useState("all");
+  const [metricsRevision, setMetricsRevision] = useState(0);
+
+  const [today, setToday] = useState(currentLocalDay);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setToday(currentLocalDay());
+    }, 30000);
+
+    return () => window.clearInterval(timer);
+  }, []);
   const [filter, setFilter] = useState("all");
   const [busy, setBusy] = useState(!guest);
   const [error, setError] = useState("");
@@ -130,6 +164,7 @@ export default function FunctionalWorkspace({
     // A mutation can change list ordering and offsets.
     // Never continue pagination using the old offset.
     setNextOffset(null);
+    setMetricsRevision(value => value + 1);
 
     try {
       const result = await listRecords(workspace, 0);
@@ -213,6 +248,7 @@ export default function FunctionalWorkspace({
       );
 
       setNextOffset(result.next_offset);
+      setMetricsRevision(value => value + 1);
     } catch (failure) {
       if (mounted.current) {
         setError(
@@ -249,9 +285,7 @@ export default function FunctionalWorkspace({
       let saved: WorkspaceRecord;
 
       if (guest) {
-        const now = Math.floor(
-          Date.now() / 1000,
-        );
+        const now = currentTimestamp();
 
         saved = {
           ...input,
@@ -356,6 +390,64 @@ export default function FunctionalWorkspace({
     }
   }
 
+  async function quickStatus(
+    record: WorkspaceRecord,
+    status: string,
+  ) {
+    if (busy || operation.current) return;
+
+    operation.current = true;
+    setBusy(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const input: RecordInput = {
+        title: record.title,
+        detail: record.detail,
+        notes: record.notes,
+        reference: record.reference,
+        scheduled_at: record.scheduled_at,
+        priority: record.priority,
+        status,
+      };
+
+      const saved = guest
+        ? {
+            ...record,
+            ...input,
+            revision: record.revision + 1,
+            updated_at: currentTimestamp(),
+          }
+        : await saveRecord(workspace, input, record);
+
+      if (!mounted.current) return;
+
+      setRecords(previous => previous.map(entry =>
+        entry.id === saved.id ? saved : entry,
+      ));
+
+      if (editing?.id === saved.id) {
+        setEditing(null);
+        setShowForm(false);
+      }
+
+      setNotice("Status updated.");
+      await reconcileAfterMutation();
+    } catch (failure) {
+      if (mounted.current) {
+        setError(
+          failure instanceof Error
+            ? failure.message
+            : "Unable to update status.",
+        );
+      }
+    } finally {
+      operation.current = false;
+      if (mounted.current) setBusy(false);
+    }
+  }
+
   const visible = records.filter(record => {
     const matchesStatus =
       filter === "all" ||
@@ -372,11 +464,34 @@ export default function FunctionalWorkspace({
       value.toLowerCase().includes(term),
     );
 
-    return matchesStatus && matchesText;
+    const date = record.scheduled_at
+      ? localDate(record.scheduled_at).slice(0, 10)
+      : "";
+
+    const matchesDate =
+      workspace !== "calendar" ||
+      !selectedDate ||
+      date === selectedDate;
+
+    const matchesDeadline =
+      workspace !== "tasks" ||
+      deadline === "all" ||
+      (deadline === "today" && date === today) ||
+      (deadline === "upcoming" &&
+        !!date && date > today &&
+        record.status !== "completed") ||
+      (deadline === "overdue" &&
+        !!date && date < today &&
+        record.status !== "completed");
+
+    return matchesStatus &&
+      matchesText &&
+      matchesDate &&
+      matchesDeadline;
   });
 
   return (
-    <div className="fw-workspace">
+    <div className="fw-workspace wx-workspace" data-kind={workspace}>
       <div className="page-heading">
         <div className="eyebrow">
           {guest
@@ -384,7 +499,10 @@ export default function FunctionalWorkspace({
             : "PRIVATE WORKSPACE"}
         </div>
 
-        <h1>{item.label}</h1>
+        <div className="wx-page-title">
+          <item.icon size={30}/>
+          <h1>{experience.heading}</h1>
+        </div>
         <p>{config.description}</p>
       </div>
 
@@ -394,14 +512,49 @@ export default function FunctionalWorkspace({
           : "Records stay in your local database. No external actions or AI requests are triggered."}
       </div>
 
-      <section className="panel fw-controls">
+      <WorkspaceInsights
+        workspace={workspace}
+        records={records}
+        filter={filter}
+        onFilter={setFilter}
+        incomplete={nextOffset !== null}
+        guest={guest}
+        onAssistant={onAssistant}
+      />
+
+
+
+      {workspace === "memory" && (
+        <MemoryDiagnostics
+          guest={guest}
+          refreshKey={metricsRevision}
+        />
+      )}
+
+      {workspace === "calendar" && (
+        <CalendarBoard
+          records={records}
+          selected={selectedDate}
+          onSelect={setSelectedDate}
+          incomplete={nextOffset !== null}
+          busy={busy}
+          onCreate={date => {
+            newRecord();
+            change("scheduled_at", date + "T09:00");
+          }}
+        />
+      )}
+
+      <section className="panel fw-controls wx-toolbar">
+        {workspace !== "calendar" && (
         <button
           className="secondary-button"
           disabled={busy}
           onClick={newRecord}
         >
-          + New record
+          + {experience.action}
         </button>
+        )}
 
         {!guest && (
           <button
@@ -415,7 +568,7 @@ export default function FunctionalWorkspace({
 
         <input
           aria-label="Search records"
-          placeholder="Search displayed records..."
+          placeholder={"Search " + experience.collection.toLowerCase() + "..."}
           value={query}
           onChange={event =>
             setQuery(event.target.value)
@@ -439,6 +592,28 @@ export default function FunctionalWorkspace({
             </option>
           ))}
         </select>
+        {workspace === "tasks" && (
+          <select
+            aria-label="Filter tasks by deadline"
+            value={deadline}
+            onChange={event => setDeadline(event.target.value)}
+          >
+            <option value="all">Any deadline</option>
+            <option value="today">Today</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        )}
+
+        {workspace === "calendar" && selectedDate && (
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setSelectedDate("")}
+          >
+            Show all dates
+          </button>
+        )}
       </section>
 
       {error && (
@@ -466,8 +641,8 @@ export default function FunctionalWorkspace({
         >
           <h2>
             {editing
-              ? "Edit record"
-              : "Create record"}
+              ? "Edit " + experience.singular
+              : experience.action}
           </h2>
 
           <div className="fw-fields">
@@ -513,6 +688,7 @@ export default function FunctionalWorkspace({
               </select>
             </label>
 
+            {(experience.priority || editing?.priority !== "normal" && !!editing) && (
             <label>
               Priority
               <select
@@ -534,11 +710,11 @@ export default function FunctionalWorkspace({
                 <option value="high">High</option>
               </select>
             </label>
+            )}
 
+            {(experience.dateField || !!draft.scheduled_at) && (
             <label>
-              {workspace === "calendar"
-                ? "Event date and time"
-                : "Date and time (optional)"}
+              {experience.date}
               <input
                 type="datetime-local"
                 required={workspace === "calendar"}
@@ -551,7 +727,9 @@ export default function FunctionalWorkspace({
                 }
               />
             </label>
+            )}
 
+            {(experience.reference || !!draft.reference) && (
             <label>
               {config.reference}
               <input
@@ -562,12 +740,11 @@ export default function FunctionalWorkspace({
                 }
               />
             </label>
+            )}
           </div>
 
           <label>
-            {workspace === "email"
-              ? "Draft message"
-              : "Notes"}
+            {experience.notes}
             <textarea
               rows={5}
               maxLength={8000}
@@ -584,7 +761,9 @@ export default function FunctionalWorkspace({
               type="submit"
               disabled={busy || !draft.title.trim()}
             >
-              {busy ? "Saving..." : "Save record"}
+              {busy
+                ? "Saving..."
+                : "Save " + experience.singular}
             </button>
 
             <button
@@ -600,7 +779,7 @@ export default function FunctionalWorkspace({
       )}
 
       <div className="fw-list-heading">
-        <h2>Records</h2>
+        <h2>{experience.collection}</h2>
         <span className="muted">
           {visible.length} shown
         </span>
@@ -610,22 +789,56 @@ export default function FunctionalWorkspace({
         <p role="status">Loading records...</p>
       )}
 
-      {!busy && visible.length === 0 && (
+      {workspace !== "jobs" && !busy && visible.length === 0 && (
         <section className="panel fw-empty">
-          <h3>No matching records</h3>
-          <p>Create a record or change your filters.</p>
+          <item.icon size={32}/>
+          <h3>{records.length ? "No matching results" : experience.empty}</h3>
+          <p>{records.length ? "Try another filter." : experience.hint}</p>
+
+          {!records.length && (
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={newRecord}
+            >
+              {experience.action}
+            </button>
+          )}
         </section>
       )}
 
-      <div className="fw-records">
-        {visible.map(record => (
+      {(workspace === "jobs" || visible.length > 0) && (
+      <WorkspaceCollection
+        workspace={workspace}
+        records={visible}
+        renderRecord={record => (
           <article
             className="panel fw-record"
             key={record.id}
           >
             <div className="fw-record-head">
-              <h3>{record.title}</h3>
-              <span className="fw-status">
+              <div className="wx-record-title">
+                {workspace === "tasks" && (
+                  <input
+                    type="checkbox"
+                    aria-label={"Complete " + record.title}
+                    checked={record.status === "completed"}
+                    disabled={busy}
+                    onChange={event => void quickStatus(
+                      record,
+                      event.target.checked ? "completed" : "todo",
+                    )}
+                  />
+                )}
+
+                <h3 data-complete={
+                  workspace === "tasks" &&
+                  record.status === "completed"
+                }>
+                  {record.title}
+                </h3>
+              </div>
+              <span className="fw-status" data-status={record.status}>
                 {formatStatus(record.status)}
               </span>
             </div>
@@ -637,15 +850,23 @@ export default function FunctionalWorkspace({
             )}
 
             {record.notes && (
-              <p className="fw-notes">
-                {record.notes}
-              </p>
+              <div>
+                {["research", "coding", "email", "memory"].includes(workspace) && (
+                  <p className="wx-field-caption">{experience.notes}</p>
+                )}
+                <p className="fw-notes">
+                  {record.notes}
+                </p>
+              </div>
             )}
 
             {record.reference && (
-              <p className="fw-reference">
-                {record.reference}
-              </p>
+              <div>
+                <p className="wx-field-caption">{config.reference}</p>
+                <p className="fw-reference">
+                  {record.reference}
+                </p>
+              </div>
             )}
 
             {record.scheduled_at && (
@@ -657,9 +878,54 @@ export default function FunctionalWorkspace({
             )}
 
             <div className="fw-actions">
-              <span className="muted">
-                {record.priority} priority
-              </span>
+              {experience.priority && (
+                <span
+                  className="wx-priority"
+                  data-priority={record.priority}
+                >
+                  {record.priority} priority
+                </span>
+              )}
+
+              {workspace === "jobs" && (
+                <select
+                  aria-label={"Application stage for " + record.title}
+                  value={record.status}
+                  disabled={busy}
+                  onChange={event => void quickStatus(
+                    record,
+                    event.target.value,
+                  )}
+                >
+                  {config.statuses.map(status => (
+                    <option key={status} value={status}>
+                      {formatStatus(status)}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {workspace === "approvals" &&
+                record.status === "pending" && (
+                <>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() => void quickStatus(record, "approved")}
+                  >
+                    Record approval
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={busy}
+                    onClick={() => void quickStatus(record, "rejected")}
+                  >
+                    Record rejection
+                  </button>
+                </>
+              )}
 
               <button
                 className="secondary-button"
@@ -674,12 +940,19 @@ export default function FunctionalWorkspace({
                 disabled={busy}
                 onClick={() => void remove(record)}
               >
-                Delete
+                {workspace === "memory" ? "Forget" : "Delete"}
               </button>
             </div>
           </article>
-        ))}
-      </div>
+        )}
+      />
+
+      )}
+
+      <IntegrationPanel
+        workspace={workspace}
+        guest={guest}
+      />
 
       {!guest && nextOffset !== null && (
         <button

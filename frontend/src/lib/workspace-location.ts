@@ -3,6 +3,7 @@ import { navigation, type Workspace } from "./navigation";
 export const SETTINGS_SECTIONS = [
   "general",
   "ai",
+  "integrations",
   "security",
   "privacy",
   "storage",

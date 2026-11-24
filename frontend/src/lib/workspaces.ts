@@ -338,10 +338,18 @@ export function listRecords(
   });
 }
 
+export type WorkspaceSummaryData = {
+  counts: WorkspaceCounts;
+  statuses: Record<RecordWorkspace, Record<string, number>>;
+  storage: {
+    memory_payload_bytes: number;
+    conversation_count: number;
+    database_page_bytes: number;
+  };
+};
+
 export function getWorkspaceCounts() {
-  return request<{
-    counts: WorkspaceCounts;
-  }>({
+  return request<WorkspaceSummaryData>({
     kind: "summary",
   });
 }
