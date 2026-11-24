@@ -16,6 +16,18 @@ Open http://127.0.0.1:8080. The smoke script checks both services, all demo exam
 
 ## Render (existing project)
 
-After the deployment PR passes CI and merges into main, create a Web Service using the connected GitHub account (not a public URL or a prebuilt image). Choose Docker, repository root, main, ./Dockerfile, Oregon, Free, health check `/api/demo/health`, and auto-deploy **After CI Checks Pass**. Leave the Docker command and environment variables empty. Render supplies PORT. Do not enter any personal credentials, API keys or databases. The root render.yaml is an equivalent Blueprint reference; do not provision duplicate services with it.
+Production uses the existing Render Web Service. Promote main
+through a validated pull request into deployment only after explicit
+approval. Do not create a second service.
+
+The service uses Docker, repository root, deployment branch,
+./Dockerfile, Oregon, Free, health check `/api/demo/health`,
+and auto-deploy **After CI Checks Pass**. Leave the Docker command and environment variables empty. Render supplies PORT. Do not enter any personal credentials, API keys or databases. The root render.yaml is an equivalent Blueprint reference; do not provision duplicate services with it.
 
 Free instances may sleep, and their filesystem is ephemeral. This demo has no persistent state. Live cloud inference for public users is deliberately not enabled.
+
+Guest workspace records are temporary. Private workspace APIs,
+conversation history and Owner settings remain inaccessible
+from the public runtime.
+
+Local smoke testing does not constitute production promotion.

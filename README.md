@@ -4,13 +4,13 @@ A privacy-first, local-first personal AI assistant designed to bring
 intelligence, productivity, research and task automation into a
 unified workspace.
 
-![Version](https://img.shields.io/badge/Version-v0.2.0-blue)
+![Version](https://img.shields.io/badge/Version-v0.3.0-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED)
 ![Deployment](https://img.shields.io/badge/Render-Live-success)
-![Tests](https://img.shields.io/badge/Backend_Tests-520-success)
+![Tests](https://img.shields.io/badge/Backend_Tests-617-success)
 
 ## Live Demo
 
@@ -65,7 +65,11 @@ The project prioritizes:
 - Responsive interface with collapsible navigation.
 - Dark and light themes.
 - System status and approval UI.
-- Dedicated placeholders for future integrations.
+- Nine functional local productivity workspaces.
+- Dedicated Jobs pipeline, email drafts and calendar views.
+- Real workspace summaries and memory storage diagnostics.
+- Consistent security, privacy, storage and audit settings.
+- Integration availability indicators without live account access.
 
 ### Authentication and Security
 
@@ -89,7 +93,9 @@ The project prioritizes:
 - AI usage tracking when application limits are enabled.
 - Private runtime files stored outside the repository.
 - Restrictive filesystem permissions.
-- SQLite schema v4 conversation storage.
+- SQLite schema v6 with persistent workspace records.
+- Transactional workspace audit events.
+- Optimistic revision checks and verified migration backups.
 - Transactional retention enforcement.
 - Owner-scoped conversation history.
 - Database integrity diagnostics.
@@ -323,13 +329,13 @@ Deployment promotion requires explicit approval.
 
 | Branch | Responsibility |
 |---|---|
-| main | Stable production source |
+| main | Canonical development and integration source |
 | frontend | Dashboard and user interface |
 | backend | APIs and application services |
 | conversation | Conversational AI |
 | database | Storage and migrations |
 | security | Authentication and security |
-| deployment | Hosting, Docker and CI/CD |
+| deployment | Explicitly approved public production source |
 
 Changes are merged through pull requests after required
 checks pass. Development branches are retained and synchronized
@@ -356,28 +362,21 @@ not sustained production performance guarantees.
 |---|---|
 | v0.1.0 | Initial MVP and isolated public demo |
 | v0.2.0 | Owner AI, shared runtime, settings and persistent conversations |
-| v0.3.0 | Basic workspace functionality and optional local AI models |
+| v0.3.0 | Functional personal workspaces and security hardening |
 | v0.4.0 | Job search workflows |
-| v0.5.0 | Tasks, memory and approval engine |
+| v0.5.0 | Advanced tasks, memory and controlled approvals |
 | v0.6.0+ | External integrations and controlled automation |
 
 Later roadmap items are planned, not implemented.
 
-## v0.2.0 Release Candidate
+## Releases
 
-- 520 automated backend tests passed.
-- 19 CI checks passed on PRs #46 and #47.
-- 11 conversation end-to-end checks passed.
-- Six additional navigation checks passed.
-- SQLite schema v4 migration and backup verified.
-- Public and private conversation isolation verified.
-- Public Docker smoke-test memory usage: 97.6 MiB.
+- [v0.1.0](https://github.com/VenkataSriSaiSuryaMandava/Personal-Agent/releases/tag/v0.1.0): Initial public release.
+- [v0.2.0](docs/releases/v0.2.0.md): Persistent intelligence workspace.
+- [v0.3.0](docs/releases/v0.3.0.md): Functional personal workspaces.
 
-These are development validation results, not production
-performance guarantees.
-
-The hosted demo remains on the previously published release
-until explicit deployment promotion.
+Development source and hosted deployment may be on different
+versions. Production promotion requires explicit approval.
 
 ## Security and Privacy
 
@@ -399,9 +398,12 @@ External actions and autonomous execution are not enabled.
 
 Aegis AI is under active development.
 
-The v0.2.0 release candidate demonstrates conversational AI, authenticated
-local operation, local persistence, security foundations and a
-reproducible deployment pipeline.
+The v0.3.0 development source includes functional local workspaces,
+authenticated conversations, persistent records, security controls
+and purpose-built workspace interfaces.
+
+Gemini remains the only implemented AI provider. External account
+connections, local models and autonomous execution are not enabled.
 
 ## Author
 
