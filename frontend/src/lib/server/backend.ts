@@ -88,7 +88,13 @@ export async function callBackend(
             "Provider quota exceeded",
             "Inference usage limit reached",
           ],
+          404: ["Conversation not found"],
+          409: [
+            "Conversation changed; reload",
+            "Conversation retention is disabled",
+          ],
           503: [
+            "Conversation storage unavailable",
             "Provider temporarily unavailable",
             "Usage storage unavailable",
             "AI unavailable",

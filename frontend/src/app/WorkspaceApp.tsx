@@ -443,7 +443,11 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
           ) : (
             <>
               <div hidden={active !== "chat"}>
-                <Conversation guest={guest} />
+                <Conversation
+                  guest={guest}
+                  retain={!guest &&
+                    snapshot?.settings.retain_conversations === true}
+                />
               </div>
 
               {active === "overview" && (

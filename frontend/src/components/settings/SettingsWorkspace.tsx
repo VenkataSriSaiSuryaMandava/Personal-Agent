@@ -385,7 +385,7 @@ function ProviderSettings({
 }
 
 type SecurityField =
-  keyof SecurityPreferences;
+  "cloud_enabled" | "emergency_stop";
 
 function SecurityControl({
   title,
@@ -575,6 +575,7 @@ function SecuritySettings({
 }
 
 function PrivacySettings({
+  guest,
   snapshot,
   busy,
   onSave,
@@ -608,10 +609,48 @@ function PrivacySettings({
 
       <SettingRow
         title="Conversation history"
-        description="Saved conversations are not implemented yet."
+        description="Save completed conversations to the private SQLite database on this device."
       >
-        <Status>Not available</Status>
+        <button
+          type="button"
+          role="switch"
+          aria-label="Conversation history"
+          aria-checked={snapshot.settings.retain_conversations}
+          className="as-toggle"
+          data-on={snapshot.settings.retain_conversations}
+          disabled={
+            guest || busy ||
+            !snapshot.editable_fields.includes(
+              "retain_conversations"
+            )
+          }
+          onClick={() => {
+            const enabled =
+              !snapshot.settings.retain_conversations;
+
+            if (enabled && !window.confirm(
+              "Save future conversations locally? Existing saved history remains until deleted."
+            )) return;
+
+            void onSave({
+              retain_conversations: enabled,
+            });
+          }}
+        >
+          <span className="as-toggle-thumb" />
+        </button>
+        <Status>
+          {snapshot.settings.retain_conversations
+            ? "Enabled"
+            : "Disabled"}
+        </Status>
       </SettingRow>
+
+      <Notice>
+        {guest
+          ? "Saved history requires Owner access."
+          : "Disabling history stops new saves. Previously saved conversations can still be reopened or deleted. Local storage is not application-encrypted."}
+      </Notice>
     </section>
   );
 }
