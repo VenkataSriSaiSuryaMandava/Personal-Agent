@@ -18,6 +18,7 @@ import {
   rememberActiveConversation,
 } from "@/lib/conversation-location";
 
+import ConversationActions from "./ConversationActions";
 import "./Conversation.css";
 
 type Turn = { user: string; assistant: string };
@@ -101,6 +102,13 @@ export default function Conversation({
     useState<string | null>(null);
 
   const [savedCount, setSavedCount] = useState(0);
+
+  const [historyExpanded, setHistoryExpanded] =
+    useState(true);
+
+  const activeTitle = savedChats.find(
+    chat => chat.id === activeId
+  )?.title;
 
   const [historyBusy, setHistoryBusy] = useState(!guest);
 
@@ -451,7 +459,11 @@ export default function Conversation({
   }
 
   return (
-    <div className="ac-history-layout">
+    <div
+      className="ac-history-layout"
+      data-history-expanded={historyExpanded}
+      data-guest={guest}
+    >
       {!guest && (
         <aside
           className="ac-history"
@@ -461,14 +473,21 @@ export default function Conversation({
             <strong>Conversations</strong>
             <button
               type="button"
-              className="ac-button"
-              disabled={busy || historyBusy}
-              onClick={newChat}
+              className="ac-button ac-history-toggle"
+              aria-expanded={historyExpanded}
+              aria-controls="ac-saved-conversations"
+              onClick={() => setHistoryExpanded(
+                previous => !previous
+              )}
             >
-              <Plus size={14}/> New
+              {historyExpanded ? "Hide" : "Show"}
             </button>
           </div>
 
+          <div
+            id="ac-saved-conversations"
+            className="ac-history-content"
+          >
           <p className="ac-history-status">
             {retain
               ? "Local history enabled"
@@ -483,7 +502,7 @@ export default function Conversation({
               () => refreshHistory()
             )}
           >
-            Refresh history
+            Refresh
           </button>
 
           {historyError && (
@@ -492,45 +511,45 @@ export default function Conversation({
             </p>
           )}
 
-          {!savedChats.length && !historyError && (
+          {!savedChats.length &&
+            !historyError && !historyBusy && (
             <p className="ac-history-status">
               No saved conversations yet.
             </p>
           )}
 
-          <div className="ac-history-list">
+          <div
+            className="ac-history-list"
+            aria-label="Conversation history"
+          >
             {savedChats.map(chat => (
               <div
                 key={chat.id}
                 className="ac-history-item"
                 data-active={activeId === chat.id}
               >
-                <button
-                  type="button"
-                  className="ac-history-title"
-                  disabled={busy || historyBusy}
-                  onClick={() => reopen(chat.id)}
-                  title={chat.title}
-                >
-                  {chat.title}
-                </button>
-
-                <div className="ac-history-actions">
+                <div className="ac-history-row">
                   <button
                     type="button"
+                    className="ac-history-title"
                     disabled={busy || historyBusy}
-                    onClick={() => rename(chat)}
+                    aria-current={
+                      activeId === chat.id
+                        ? "true"
+                        : undefined
+                    }
+                    onClick={() => reopen(chat.id)}
+                    title={chat.title}
                   >
-                    Rename
+                    {chat.title}
                   </button>
 
-                  <button
-                    type="button"
+                  <ConversationActions
+                    title={chat.title}
                     disabled={busy || historyBusy}
-                    onClick={() => remove(chat)}
-                  >
-                    Delete
-                  </button>
+                    onRename={() => rename(chat)}
+                    onDelete={() => remove(chat)}
+                  />
                 </div>
               </div>
             ))}
@@ -548,17 +567,23 @@ export default function Conversation({
               Load more
             </button>
           )}
+          </div>
         </aside>
       )}
 
-    <section className="ac-panel" aria-label="Aegis conversation">
+    <section
+      className="ac-panel"
+      aria-label="Aegis conversation"
+    >
       <header className="ac-header">
         <div className="ac-brand"><span className="ac-logo"><Sparkles size={22} /></span><div>
-          <h2>Aegis Assistant</h2><p>{guest ? "AI unavailable in Guest mode" : "Gemini 3.1 Flash-Lite · Cloud assistant"}</p>
+          <h2 title={activeTitle ?? "Aegis Assistant"}>
+            {activeTitle ?? "Aegis Assistant"}
+          </h2><p>{guest ? "AI unavailable in Guest mode" : "Gemini 3.1 Flash-Lite · Cloud assistant"}</p>
         </div></div>
         <button type="button" className="ac-button" disabled={busy || historyBusy} onClick={newChat}><Plus size={16}/> New chat</button>
       </header>
-      <div className="ac-scroll" ref={messages} aria-live="polite" aria-busy={busy}>
+      <div className="ac-scroll" ref={messages} aria-live="polite" aria-busy={busy || historyBusy} tabIndex={0}>
         {historyBusy && turns.length === 0 && (
           <div className="ac-loading" role="status">
             <LoaderCircle size={18}/>

@@ -118,6 +118,13 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   const [failed, setFailed] = useState(false);
 
   const operation = useRef(false);
+  const navigationRevision = useRef(0);
+
+  function clearNavigationNotice() {
+    navigationRevision.current += 1;
+    setMessage("");
+    setFailed(false);
+  }
 
   const systemDark = useSyncExternalStore(
     subscribeColorScheme,
@@ -206,6 +213,10 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
 
   useEffect(() => {
     function restoreLocation() {
+      navigationRevision.current += 1;
+      setMessage("");
+      setFailed(false);
+
       const location = readWorkspaceLocation(
         snapshot?.settings.startup_workspace ?? "overview"
       );
@@ -228,6 +239,8 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   }, [snapshot?.settings.startup_workspace]);
 
   function navigate(workspace: Workspace) {
+    clearNavigationNotice();
+
     const section =
       workspace === "settings" && active === "settings"
         ? settingsSection
@@ -243,6 +256,7 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
   }
 
   function navigateSettings(section: SettingsSection) {
+    clearNavigationNotice();
     setSettingsSection(section);
 
     writeWorkspaceLocation(
@@ -258,6 +272,8 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
     if (operation.current) return false;
 
     operation.current = true;
+    const startedAt = navigationRevision.current;
+
     setBusy(true);
     setMessage("");
 
@@ -265,18 +281,23 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
       const result = await action();
 
       setSnapshot(result);
-      setFailed(false);
-      setMessage(success);
+
+      if (startedAt === navigationRevision.current) {
+        setFailed(false);
+        setMessage(success);
+      }
 
       return true;
     } catch (error) {
-      setFailed(true);
+      if (startedAt === navigationRevision.current) {
+        setFailed(true);
 
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Settings operation failed."
-      );
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Settings operation failed."
+        );
+      }
 
       return false;
     } finally {
@@ -381,6 +402,7 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
       className="app-shell ac-shell"
       data-theme={dark ? "dark" : "light"}
       data-sidebar={collapsed ? "collapsed" : "expanded"}
+      data-workspace={active}
     >
       <Sidebar active={active} onNavigate={navigate}/>
 
@@ -442,7 +464,10 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
             </section>
           ) : (
             <>
-              <div hidden={active !== "chat"}>
+              <div
+                className="ac-chat-workspace"
+                hidden={active !== "chat"}
+              >
                 <Conversation
                   guest={guest}
                   retain={!guest &&
