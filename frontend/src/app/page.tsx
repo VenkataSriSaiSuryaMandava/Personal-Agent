@@ -53,7 +53,11 @@ const GUEST_SETTINGS: SettingsSnapshot = {
   },
   revision: 1,
   updated_at: 0,
-  editable_fields: [],
+  editable_fields: [
+    "theme",
+    "startup_workspace",
+    "response_style",
+  ],
   security_enforcement_active: true,
 };
 
@@ -103,7 +107,8 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(!guest);
-  const [guestDark, setGuestDark] = useState(true);
+  const [guestSnapshot, setGuestSnapshot] =
+    useState<SettingsSnapshot>(GUEST_SETTINGS);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
@@ -116,13 +121,13 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
     serverColorScheme
   );
 
-  const theme = snapshot?.settings.theme ?? "dark";
+  const theme = guest
+    ? guestSnapshot.settings.theme
+    : snapshot?.settings.theme ?? "dark";
 
-  const dark = guest
-    ? guestDark
-    : theme === "system"
-      ? systemDark
-      : theme === "dark";
+  const dark = theme === "system"
+    ? systemDark
+    : theme === "dark";
 
   const current = navigation.find(
     item => item.id === active
@@ -276,6 +281,70 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
     }
   }
 
+  async function saveGuest(
+    changes: Partial<GeneralPreferences & SecurityPreferences>
+  ): Promise<boolean> {
+    if (!guest) return false;
+
+    // Only general preferences can be changed in Guest mode.
+    const allowed = new Set([
+      "theme",
+      "startup_workspace",
+      "response_style",
+    ]);
+
+    if (Object.keys(changes).some(
+      field => !allowed.has(field)
+    )) {
+      return false;
+    }
+
+    setGuestSnapshot(previous => ({
+      ...previous,
+      settings: {
+        ...previous.settings,
+        theme: changes.theme ?? previous.settings.theme,
+        startup_workspace:
+          changes.startup_workspace ??
+          previous.settings.startup_workspace,
+        response_style:
+          changes.response_style ??
+          previous.settings.response_style,
+      },
+      revision: previous.revision + 1,
+      updated_at: Math.floor(Date.now() / 1000),
+    }));
+
+    setFailed(false);
+    setMessage("Guest preview preferences saved temporarily.");
+
+    return true;
+  }
+
+  async function resetGuest(): Promise<boolean> {
+    return saveGuest({
+      theme: GUEST_SETTINGS.settings.theme,
+      startup_workspace:
+        GUEST_SETTINGS.settings.startup_workspace,
+      response_style:
+        GUEST_SETTINGS.settings.response_style,
+    });
+  }
+
+  async function reloadGuest(): Promise<boolean> {
+    if (!guest) return false;
+
+    setGuestSnapshot(previous => ({
+      ...previous,
+      revision: previous.revision + 1,
+    }));
+
+    setFailed(false);
+    setMessage("Guest preview preferences reloaded.");
+
+    return true;
+  }
+
   async function save(
     changes: Partial<GeneralPreferences & SecurityPreferences>
   ) {
@@ -331,7 +400,9 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
             themeDisabled={loading || busy || (!guest && !snapshot)}
             onToggleTheme={() => {
               if (guest) {
-                setGuestDark(value => !value);
+                void saveGuest({
+                  theme: dark ? "light" : "dark",
+                });
                 return;
               }
               void save({ theme: dark ? "light" : "dark" });
@@ -479,11 +550,11 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                     guest
                     section={settingsSection}
                     onSectionChange={navigateSettings}
-                    snapshot={GUEST_SETTINGS}
+                    snapshot={guestSnapshot}
                     busy={false}
-                    onSave={async () => false}
-                    onReset={async () => false}
-                    onReload={async () => false}
+                    onSave={saveGuest}
+                    onReset={resetGuest}
+                    onReload={reloadGuest}
                   />
                 ) : snapshot ? (
                   <SettingsWorkspace

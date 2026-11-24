@@ -54,6 +54,7 @@ const SECTIONS = [
 
 
 type Props = {
+  guest?: boolean;
   section: SettingsSection;
   onSectionChange: (section: SettingsSection) => void;
   snapshot: SettingsSnapshot;
@@ -113,6 +114,7 @@ function formatTime(seconds: number) {
 }
 
 function GeneralSettings({
+  guest,
   snapshot,
   busy,
   onSave,
@@ -146,7 +148,9 @@ function GeneralSettings({
     <section className="panel as-panel">
       <h2>General preferences</h2>
       <p className="as-description">
-        Personalize your workspace. Changes are stored locally.
+        {guest
+          ? "Personalize this preview. Changes are temporary."
+          : "Personalize your workspace. Changes are stored locally."}
       </p>
 
       <div className="as-field">
@@ -178,7 +182,10 @@ function GeneralSettings({
         <label htmlFor="aegis-startup">
           Startup workspace
         </label>
-        <p>Choose which page opens after signing in.</p>
+        <p>
+          Saved workspace preference.
+          Fresh Owner Login always opens Overview.
+        </p>
 
         <select
           id="aegis-startup"
@@ -672,9 +679,7 @@ export default function SettingsWorkspace(
   props: Props & { guest?: boolean }
 ) {
   const guest = props.guest === true;
-  const safeProps: Props = guest
-    ? { ...props, busy: true }
-    : props;
+  const safeProps: Props = props;
   const {
     snapshot,
     busy,
@@ -800,7 +805,7 @@ export default function SettingsWorkspace(
 
             <button
               className="secondary-button"
-              disabled={guest || busy || auditBusy}
+              disabled={busy || auditBusy}
               onClick={async () => {
                 if (await props.onReload()) {
                   setRefresh(value => value + 1);
@@ -811,6 +816,14 @@ export default function SettingsWorkspace(
               Reload settings
             </button>
           </div>
+
+          {guest && (
+            <Notice>
+              Guest preferences are temporary.
+              Live AI, private settings, credentials and
+              security changes require Owner access.
+            </Notice>
+          )}
 
           {diagnosticError && (
             <p className="as-error" role="alert">
