@@ -70,6 +70,7 @@ def test_version_one_migration_preserves_data(database_path):
 
     with connect(database_path) as connection:
 
+        connection.execute("DROP TABLE workspace_records")
         connection.execute("DROP TABLE conversation_turns")
         connection.execute("DROP TABLE conversations")
         connection.execute("DROP TABLE security_audit_events")

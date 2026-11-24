@@ -216,6 +216,7 @@ def test_disable_retention_preserves_existing_history(db):
 def test_migration_preserves_owner_and_settings(db):
     # Reconstruct the previous schema using test data.
     with connect(db) as connection:
+        connection.execute("DROP TABLE workspace_records")
         connection.execute(
             "DROP TABLE conversation_turns"
         )
@@ -242,7 +243,7 @@ def test_migration_preserves_owner_and_settings(db):
             "SELECT COUNT(*) FROM users"
         ).fetchone()[0]
 
-    assert version == 4
+    assert version == 5
     assert owner_count == 1
 
 

@@ -17,7 +17,8 @@ import Conversation from "@/components/dashboard/Conversation";
 import SystemStatus from "@/components/dashboard/SystemStatus";
 import Approvals from "@/components/dashboard/Approvals";
 import SettingsWorkspace from "@/components/settings/SettingsWorkspace";
-import WorkspacePreview from "@/components/workspaces/WorkspacePreview";
+import FunctionalWorkspace from "@/components/workspaces/FunctionalWorkspace";
+import WorkspaceSummary from "@/components/workspaces/WorkspaceSummary";
 
 import {
   readWorkspaceLocation,
@@ -501,7 +502,7 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                     <StatusCard
                       title="Task engine"
                       value="Off"
-                      description="Not implemented yet"
+                      description="Manual task tracking available"
                     />
                     <StatusCard
                       title="File access"
@@ -548,6 +549,10 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                     </div>
 
                     <div className="right-column">
+                      <WorkspaceSummary
+                        guest={guest}
+                        onNavigate={navigate}
+                      />
                       {guest ? (
                         <section className="panel">
                           <div className="panel-heading">
@@ -619,17 +624,10 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
               {active !== "chat" &&
                active !== "overview" &&
                active !== "settings" && (
-                <WorkspacePreview
+                <FunctionalWorkspace
+                  key={active}
                   workspace={active}
-                  onNavigate={navigate}
-                  onOpenSecurity={() => {
-                    setActive("settings");
-                    setSettingsSection("security");
-                    writeWorkspaceLocation(
-                      "settings",
-                      "security"
-                    );
-                  }}
+                  guest={guest}
                 />
               )}
             </>
