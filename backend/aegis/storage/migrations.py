@@ -10,7 +10,7 @@ from aegis.storage.database import (
 from aegis.storage.settings import ApplicationSettings
 
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def initialize_database(
@@ -175,4 +175,51 @@ def initialize_database(
 
             connection.execute(
                 "PRAGMA user_version = 3"
+            )
+
+            version = 3
+
+        if version == 3:
+
+            connection.execute("""
+                CREATE TABLE conversations (
+                    id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    title TEXT NOT NULL
+                        CHECK (length(title) BETWEEN 1 AND 120),
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_conversations_owner_updated
+                ON conversations(user_id, updated_at DESC)
+            """)
+
+            connection.execute("""
+                CREATE TABLE conversation_turns (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    conversation_id TEXT NOT NULL,
+                    user_message TEXT NOT NULL
+                        CHECK (length(user_message) BETWEEN 1 AND 4000),
+                    assistant_message TEXT NOT NULL
+                        CHECK (length(assistant_message) BETWEEN 1 AND 20000),
+                    created_at INTEGER NOT NULL,
+                    FOREIGN KEY (conversation_id)
+                        REFERENCES conversations(id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_conversation_turns_parent
+                ON conversation_turns(conversation_id, id)
+            """)
+
+            connection.execute(
+                "PRAGMA user_version = 4"
             )
