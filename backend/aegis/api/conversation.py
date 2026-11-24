@@ -7,7 +7,13 @@ from starlette.concurrency import run_in_threadpool
 
 from aegis.api.auth import require_owner, deny, SECURITY_HEADERS
 from aegis.schemas.conversation import ConversationRequest
-from aegis.security.gateway import GatewayDenied, ProviderUnavailable
+from aegis.security.gateway import (
+    GatewayDenied,
+    ProviderUnavailable,
+    ProviderQuotaExceeded,
+    ProviderTimedOut,
+    ProviderTemporarilyUnavailable,
+)
 from aegis.security.rate_limit import RateLimitExceeded, UsageStorageUnavailable
 from aegis.services.conversation import run_conversation
 
@@ -46,6 +52,14 @@ async def conversation(request: Request):
         deny(403, "Conversation denied by policy")
     except RateLimitExceeded:
         deny(429, "Inference usage limit reached")
-    except (ProviderUnavailable, UsageStorageUnavailable):
+    except ProviderQuotaExceeded:
+        deny(429, "Provider quota exceeded")
+    except ProviderTimedOut:
+        deny(504, "Provider request timed out")
+    except ProviderTemporarilyUnavailable:
+        deny(503, "Provider temporarily unavailable")
+    except UsageStorageUnavailable:
+        deny(503, "Usage storage unavailable")
+    except ProviderUnavailable:
         deny(503, "AI unavailable")
     return JSONResponse(content=result.model_dump(), headers=SECURITY_HEADERS)
