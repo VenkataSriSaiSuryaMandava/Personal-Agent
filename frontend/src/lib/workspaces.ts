@@ -108,19 +108,196 @@ export const WORKSPACE_CONFIG = {
   }
 >;
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+function collectionEndpoint(
+  workspace: RecordWorkspace | "summary",
+): string {
+  switch (workspace) {
+    case "tasks":
+      return "/api/agent/workspaces/tasks";
+    case "jobs":
+      return "/api/agent/workspaces/jobs";
+    case "email":
+      return "/api/agent/workspaces/email";
+    case "calendar":
+      return "/api/agent/workspaces/calendar";
+    case "research":
+      return "/api/agent/workspaces/research";
+    case "coding":
+      return "/api/agent/workspaces/coding";
+    case "browser":
+      return "/api/agent/workspaces/browser";
+    case "memory":
+      return "/api/agent/workspaces/memory";
+    case "approvals":
+      return "/api/agent/workspaces/approvals";
+    case "summary":
+      return "/api/agent/workspaces/summary";
+    default:
+      throw new Error("Invalid workspace.");
+  }
+}
+
+function recordIdentifier(id: string): string {
+  if (
+    typeof id !== "string" ||
+    !UUID_PATTERN.test(id)
+  ) {
+    throw new Error("Invalid record identifier.");
+  }
+
+  return encodeURIComponent(id);
+}
+
+function validOffset(offset: number): number {
+  if (
+    !Number.isSafeInteger(offset) ||
+    offset < 0 ||
+    offset > 1000000
+  ) {
+    throw new Error("Invalid pagination offset.");
+  }
+
+  return offset;
+}
+
+function validRevision(revision: number): number {
+  if (
+    !Number.isSafeInteger(revision) ||
+    revision < 1
+  ) {
+    throw new Error("Invalid record revision.");
+  }
+
+  return revision;
+}
+
+type WorkspaceOperation =
+  | {
+      kind: "summary";
+    }
+  | {
+      kind: "list";
+      workspace: RecordWorkspace;
+      offset: number;
+    }
+  | {
+      kind: "create";
+      workspace: RecordWorkspace;
+      input: RecordInput;
+    }
+  | {
+      kind: "update";
+      workspace: RecordWorkspace;
+      id: string;
+      revision: number;
+      input: RecordInput;
+    }
+  | {
+      kind: "delete";
+      workspace: RecordWorkspace;
+      id: string;
+      revision: number;
+    };
+
 async function request<T>(
-  path: string,
-  options: RequestInit = {},
+  operation: WorkspaceOperation,
 ): Promise<T> {
-  const response = await fetch(
-    "/api/agent/workspaces/" + path,
-    {
-      ...options,
-      credentials: "same-origin",
-      cache: "no-store",
-      signal: AbortSignal.timeout(15000),
-    },
+  const endpoint = collectionEndpoint(
+    operation.kind === "summary"
+      ? "summary"
+      : operation.workspace,
   );
+
+  let pathname = endpoint;
+
+  const query = new URLSearchParams();
+
+  let method: "GET" | "POST" | "PATCH" | "DELETE" =
+    "GET";
+
+  let body: string | undefined;
+
+  switch (operation.kind) {
+    case "summary":
+      break;
+
+    case "list":
+      query.set("limit", "100");
+      query.set(
+        "offset",
+        String(validOffset(operation.offset)),
+      );
+      break;
+
+    case "create":
+      method = "POST";
+      body = JSON.stringify(operation.input);
+      break;
+
+    case "update":
+      method = "PATCH";
+
+      pathname += "/" + recordIdentifier(
+        operation.id,
+      );
+
+      body = JSON.stringify({
+        ...operation.input,
+        expected_revision: validRevision(
+          operation.revision,
+        ),
+      });
+      break;
+
+    case "delete":
+      method = "DELETE";
+
+      pathname += "/" + recordIdentifier(
+        operation.id,
+      );
+
+      query.set(
+        "revision",
+        String(validRevision(operation.revision)),
+      );
+      break;
+
+    default:
+      throw new Error("Invalid workspace operation.");
+  }
+
+  const url = new URL(
+    endpoint,
+    window.location.origin,
+  );
+
+  url.pathname = pathname;
+  url.search = query.toString();
+
+  if (
+    url.origin !== window.location.origin ||
+    (
+      url.pathname !== endpoint &&
+      !url.pathname.startsWith(endpoint + "/")
+    )
+  ) {
+    throw new Error("Invalid workspace endpoint.");
+  }
+
+  const response = await fetch(url, {
+    method,
+    body,
+    headers: body === undefined
+      ? undefined
+      : { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(15000),
+  });
 
   if (response.status === 401) {
     window.dispatchEvent(
@@ -154,15 +331,19 @@ export function listRecords(
   return request<{
     records: WorkspaceRecord[];
     next_offset: number | null;
-  }>(
-    workspace + "?limit=100&offset=" + offset,
-  );
+  }>({
+    kind: "list",
+    workspace,
+    offset,
+  });
 }
 
 export function getWorkspaceCounts() {
   return request<{
     counts: WorkspaceCounts;
-  }>("summary");
+  }>({
+    kind: "summary",
+  });
 }
 
 export function saveRecord(
@@ -170,30 +351,34 @@ export function saveRecord(
   input: RecordInput,
   existing?: WorkspaceRecord,
 ) {
-  return request<WorkspaceRecord>(
-    workspace +
-      (existing ? "/" + existing.id : ""),
-    {
-      method: existing ? "PATCH" : "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ...input,
-        ...(existing ? {
-          expected_revision: existing.revision,
-        } : {}),
-      }),
-    },
-  );
+  if (existing) {
+    if (existing.workspace !== workspace) {
+      throw new Error("Record workspace mismatch.");
+    }
+
+    return request<WorkspaceRecord>({
+      kind: "update",
+      workspace,
+      id: existing.id,
+      revision: existing.revision,
+      input,
+    });
+  }
+
+  return request<WorkspaceRecord>({
+    kind: "create",
+    workspace,
+    input,
+  });
 }
 
 export function removeRecord(
   record: WorkspaceRecord,
 ) {
-  return request<{ deleted: boolean }>(
-    record.workspace + "/" + record.id +
-      "?revision=" + record.revision,
-    { method: "DELETE" },
-  );
+  return request<{ deleted: boolean }>({
+    kind: "delete",
+    workspace: record.workspace,
+    id: record.id,
+    revision: record.revision,
+  });
 }
