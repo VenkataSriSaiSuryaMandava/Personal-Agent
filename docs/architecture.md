@@ -7,7 +7,7 @@ A local-first modular monolith for a single Owner.
 - Next.js frontend bound to loopback.
 - FastAPI backend on the internal Docker network.
 - Docker Compose manages both services.
-- SQLite schema v4 in a persistent volume.
+- SQLite schema v6 in a persistent volume.
 - Runtime credentials stored outside the repository.
 - Argon2id authentication and revocable sessions.
 - HttpOnly, SameSite Strict session cookies.
@@ -56,7 +56,16 @@ Conversation messages remain in authenticated SQLite storage.
 ## Storage
 
 SQLite stores authentication, settings, usage tracking,
-security audit events and conversation history.
+security audit events, conversation history and workspace records.
+
+Schema v5 introduced Owner-scoped workspace records.
+Schema v6 introduced transactional workspace audit events.
+
+Workspace updates use optimistic revisions. Audit metadata is
+written atomically through SQLite triggers. Audit records exclude
+workspace content and are not tamper-proof logs.
+
+Database backups are verified before schema upgrades.
 
 Disabling retention stops new saves.
 Existing history remains until explicitly deleted.
@@ -74,7 +83,12 @@ Secure physical deletion is not guaranteed.
 - No autonomous background workflows.
 - No external action execution.
 - No operating-system-level tool sandbox.
-- Non-assistant workspaces remain incomplete integrations.
+- External account integrations are unavailable.
+- Saved memories are not automatically included in AI requests.
+- Approval records do not authorize external execution.
+- Workspace filtering and calendar views operate on loaded records.
+- Offset pagination is not a concurrent snapshot.
+- No application-level encryption.
 
 ## Release workflow
 
@@ -84,5 +98,41 @@ All five development branches synchronize with main.
 The deployment branch is promoted only after explicit approval.
 Render watches deployment, not main.
 
-Future work includes local model support, persistent tasks,
-memory, scoped approvals and controlled external integrations.
+## Workspace architecture
+
+Nine functional record workspaces share authenticated CRUD APIs
+and a common persistence layer:
+
+- Tasks: local task tracking and completion.
+- Jobs: six-stage application pipeline.
+- Email: local drafts and archived messages.
+- Calendar: local month, week and day views.
+- Research: research records and source references.
+- Coding: project records and repository references.
+- Browser: bookmarks and explicitly confirmed external searches.
+- Memory: manually saved local records and storage diagnostics.
+- Approvals: manual pending and decision history records.
+
+Owner records persist in private SQLite storage. Guest records
+are temporary and do not access private workspace APIs.
+
+The client uses allowlisted same-origin endpoints, bounded
+identifiers, pagination and revision values. The server gateway
+validates access, request origins and payloads before forwarding
+requests to the private backend.
+
+Workspace summaries contain counts, status breakdowns and storage
+measurements rather than private record content.
+
+Allocated SQLite pages are not equivalent to memory payload size,
+total filesystem usage or AI memory capacity.
+
+## AI provider architecture
+
+The provider registry authorizes Gemini only.
+Groq is not implemented, and automatic fallback is disabled.
+Provider configuration diagnostics do not prove live availability.
+
+Future development focuses on job intelligence, advanced tasks,
+permission-based memory retrieval, controlled approvals and
+authorized external integrations.
