@@ -3,6 +3,8 @@ import os
 from fastapi import APIRouter, Depends
 from aegis.api.auth import require_owner
 from aegis.config import settings
+from aegis.security.runtime_policy import ai_enabled
+from aegis.security.request_storage import public_runtime
 
 router = APIRouter()
 
@@ -13,6 +15,7 @@ def health() -> dict[str, str]:
         "status": "ok",
         "version": settings.version,
         "stage": "api-foundation",
+        "mode": "public" if public_runtime() else "private",
     }
 
 
@@ -36,7 +39,8 @@ def status() -> dict[str, str | bool]:
     )
 
     enabled = (
-        configured
+        ai_enabled()
+        and configured
         and gateway_configured
         and model == "gemini-3.1-flash-lite"
         and os.getenv("AEGIS_CLOUD_ENABLED") == "1"

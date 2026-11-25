@@ -4,10 +4,8 @@ import { useState } from "react";
 
 import {
   ArrowUpRight,
-  Brain,
   CheckCircle2,
   Clock3,
-  Database,
   Globe,
   ShieldCheck,
 } from "lucide-react";
@@ -18,23 +16,13 @@ import {
   type WorkspaceRecord,
 } from "@/lib/workspaces";
 
-function bytesLabel(bytes: number) {
-  if (bytes < 1024) return bytes + " B";
-
-  if (bytes < 1024 * 1024) {
-    return (bytes / 1024).toFixed(1) + " KiB";
-  }
-
-  return (bytes / 1024 / 1024).toFixed(1) + " MiB";
-}
-
 export default function WorkspaceInsights({
   workspace,
   records,
   filter,
   onFilter,
   incomplete,
-  guest,
+  publicMode,
   onAssistant,
 }: {
   workspace: RecordWorkspace;
@@ -42,24 +30,13 @@ export default function WorkspaceInsights({
   filter: string;
   onFilter: (value: string) => void;
   incomplete: boolean;
-  guest: boolean;
+  publicMode: boolean;
   onAssistant: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [engine, setEngine] = useState("google");
 
   const statuses = WORKSPACE_CONFIG[workspace].statuses;
-
-  const contentBytes = records.reduce(
-    (total, record) => total +
-      new TextEncoder().encode(JSON.stringify({
-        title: record.title,
-        notes: record.notes,
-        detail: record.detail,
-        reference: record.reference,
-      })).length,
-    0,
-  );
 
   function launchSearch() {
     const term = search.trim();
@@ -98,29 +75,7 @@ export default function WorkspaceInsights({
 
   return (
     <>
-      {workspace === "memory" ? (
-        guest ? (
-        <div className="wx-metrics">
-          <article className="panel wx-metric">
-            <Brain size={20}/>
-            <span>Loaded memories</span>
-            <strong>{records.length}</strong>
-          </article>
-
-          <article className="panel wx-metric">
-            <Database size={20}/>
-            <span>Loaded content size</span>
-            <strong>{bytesLabel(contentBytes)}</strong>
-          </article>
-
-          <article className="panel wx-metric">
-            <ShieldCheck size={20}/>
-            <span>AI memory access</span>
-            <strong>Off</strong>
-          </article>
-        </div>
-        ) : null
-      ) : workspace === "jobs" || workspace === "email" ||
+      {workspace === "memory" || workspace === "jobs" || workspace === "email" ||
           workspace === "calendar" ? null : (
         <div className="wx-metrics">
           {statuses.map(status => (
@@ -162,7 +117,7 @@ export default function WorkspaceInsights({
 
           <div>
             <strong>
-              {guest ? "Temporary memory preview" : "Private local memory"}
+              {publicMode ? "Temporary session memory" : "Private local memory"}
             </strong>
 
             <p className="muted">
@@ -223,16 +178,14 @@ export default function WorkspaceInsights({
 
             <button
               className="secondary-button fw-primary"
-              disabled={!search.trim() || guest}
+              disabled={!search.trim()}
             >
               Search externally <ArrowUpRight size={15}/>
             </button>
           </form>
 
           <p className="muted">
-            {guest
-              ? "External searching is disabled in Guest mode."
-              : "Opens your default browser. Only the typed query is shared after confirmation."}
+            Search opens your selected external search engine.
           </p>
         </section>
       )}

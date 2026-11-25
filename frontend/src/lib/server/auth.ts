@@ -1,12 +1,18 @@
-import { backendOrigin } from "./backend-origin";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import {
+  guestAvailable,
+  guestSession,
+  sessionBackend,
+  sessionGateway,
+  sessionBearer,
+} from "./backend-origin";
 import { NextRequest, NextResponse } from "next/server";
-import { rejectRequest } from "./backend";
+import { rejectRequest, publicRuntime, publicOrigin } from "./backend";
 
 export const SESSION_COOKIE = "aegis_session";
 
 const SESSION_DURATION = 43200;
 
-const BACKEND_URL = backendOrigin();
 
 const AUTH_HEADERS = {
   "Cache-Control": "no-store",
@@ -14,7 +20,7 @@ const AUTH_HEADERS = {
   "X-Content-Type-Options": "nosniff",
 };
 
-type AuthEndpoint = "login" | "session" | "logout";
+type AuthEndpoint = "login" | "session" | "logout" | "guest";
 
 export function authResponse(
   payload: object,
@@ -29,18 +35,76 @@ export function authResponse(
 export function readSession(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
 
-  if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
+  if (!token || !/^(?:guest\.)?[A-Za-z0-9_-]{43}$/.test(token)) {
+    return null;
+  }
+
+  if (guestSession(token) &&
+      (publicRuntime() || !guestAvailable())) {
     return null;
   }
 
   return token;
 }
 
+export function sessionBinding(token: string): string {
+  const gateway = sessionGateway(token);
+
+  if (!gateway || gateway.length < 64) {
+    throw new Error("Session verification unavailable");
+  }
+
+  return createHmac("sha256", gateway)
+    .update("aegis-workspace-session-v1:")
+    .update(token)
+    .digest("hex");
+}
+
+export function validSessionBinding(
+  request: NextRequest,
+  token: string
+): boolean {
+  const supplied = request.headers.get("x-aegis-session-binding");
+
+  if (!supplied || !/^[a-f0-9]{64}$/.test(supplied)) {
+    return false;
+  }
+
+  try {
+    return timingSafeEqual(
+      Buffer.from(supplied, "hex"),
+      Buffer.from(sessionBinding(token), "hex")
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function inspectSession(token: string) {
+  const response = await authBackend(
+    "session",
+    { method: "GET" },
+    token
+  );
+
+  if (response.status === 401) return "expired" as const;
+  if (response.status === 429) return "limited" as const;
+  if (!response.ok) return "unavailable" as const;
+
+  const body = await response.json().catch(() => null);
+
+  return body?.authenticated === true
+    ? "valid" as const
+    : "unavailable" as const;
+}
+
 function cookieOptions(request: NextRequest) {
   return {
     httpOnly: true,
     sameSite: "strict" as const,
-    secure: request.nextUrl.protocol === "https:",
+    secure: publicRuntime()
+      ? publicOrigin()?.startsWith("https://") !== false
+      : request.nextUrl.protocol === "https:",
     path: "/",
   };
 }
@@ -50,6 +114,11 @@ export function setSession(
   response: NextResponse,
   token: string
 ) {
+  response.headers.set(
+    "x-aegis-session-binding",
+    sessionBinding(token)
+  );
+
   response.cookies.set(SESSION_COOKIE, token, {
     ...cookieOptions(request),
     maxAge: SESSION_DURATION,
@@ -71,29 +140,16 @@ export function clearSession(
 }
 
 export function rejectAuthRequest(request: NextRequest) {
-  const rejected = rejectRequest(request);
-
-  if (rejected) return rejected;
-
-  const host = request.headers.get("host");
-  const origin = request.headers.get("origin");
-
-  if (origin && origin !== `http://${host}`) {
-    return authResponse(
-      { detail: "Invalid request origin" },
-      403
-    );
-  }
-
-  return null;
+  return rejectRequest(request);
 }
 
 export async function authBackend(
   endpoint: AuthEndpoint,
   init: RequestInit = {},
-  session?: string
+  session?: string,
+  query?: URLSearchParams
 ) {
-  const gateway = process.env.AEGIS_GATEWAY_TOKEN;
+  const gateway = sessionGateway(endpoint === "guest" && !publicRuntime() ? "guest." : session);
 
   if (!gateway || gateway.length < 64) {
     return authResponse(
@@ -107,12 +163,26 @@ export async function authBackend(
   headers.set("x-aegis-gateway-token", gateway);
 
   if (session) {
-    headers.set("Authorization", `Bearer ${session}`);
+    headers.set("Authorization", `Bearer ${sessionBearer(session)}`);
   }
 
   try {
+    const destination =
+      endpoint === "guest" && !publicRuntime()
+        ? sessionBackend("guest.")
+        : sessionBackend(session);
+
+    const url = new URL(
+      `/api/v1/auth/${endpoint}`,
+      destination
+    );
+
+    if (query && endpoint === "guest") {
+      url.search = query.toString();
+    }
+
     return await fetch(
-      `${BACKEND_URL}/api/v1/auth/${endpoint}`,
+      url,
       {
         ...init,
         headers,

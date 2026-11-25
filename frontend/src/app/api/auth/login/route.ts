@@ -1,16 +1,46 @@
 import { NextRequest } from "next/server";
+import { publicRuntime } from "@/lib/server/backend";
 
 import {
   authBackend,
   authResponse,
   rejectAuthRequest,
   setSession,
+  readSession,
+  inspectSession,
 } from "@/lib/server/auth";
 
 export async function POST(request: NextRequest) {
   const rejected = rejectAuthRequest(request);
 
   if (rejected) return rejected;
+
+  if (publicRuntime()) {
+    return authResponse(
+      { detail: "Owner login unavailable in public mode" },
+      403
+    );
+  }
+
+  const existing = readSession(request);
+
+  if (existing) {
+    const status = await inspectSession(existing);
+
+    if (status === "valid") {
+      return authResponse(
+        { detail: "Sign out before starting another session" },
+        409
+      );
+    }
+
+    if (status !== "expired") {
+      return authResponse(
+        { detail: "Session temporarily unavailable" },
+        status === "limited" ? 429 : 503
+      );
+    }
+  }
 
   const type = request.headers
     .get("content-type")
@@ -137,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     return setSession(
       request,
-      authResponse({ authenticated: true }),
+      authResponse({ authenticated: true, role: "owner" }),
       result.session_token
     );
   } catch {

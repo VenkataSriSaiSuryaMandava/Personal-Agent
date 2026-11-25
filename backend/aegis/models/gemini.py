@@ -2,6 +2,8 @@ import json
 import re
 import urllib.request
 
+from aegis.security.runtime_policy import ai_enabled
+
 
 class RejectRedirects(urllib.request.HTTPRedirectHandler):
 
@@ -33,6 +35,11 @@ class GeminiProvider:
         )
 
     def complete(self, prompt: str) -> str:
+
+        if not ai_enabled():
+            raise RuntimeError(
+                "AI is disabled in this deployment"
+            )
 
         url = f"{self.BASE_URL}/{self._model}:generateContent"
 

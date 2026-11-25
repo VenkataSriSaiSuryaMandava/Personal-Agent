@@ -1,3 +1,4 @@
+import { workspaceFetch } from "@/lib/session-client";
 export type Theme = "dark" | "light" | "system";
 
 export type StartupWorkspace =
@@ -83,7 +84,7 @@ async function request<T>(
   suffix = "",
   init: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(BASE + suffix, {
+  const response = await workspaceFetch(BASE + suffix, {
     ...init,
     cache: "no-store",
     credentials: "same-origin",

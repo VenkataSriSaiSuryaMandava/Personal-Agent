@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from aegis.models.base import ModelProvider
+from aegis.security.runtime_policy import ai_enabled
 from aegis.policy import (
     Action,
     DataClass,
@@ -122,6 +123,11 @@ class OutboundGateway:
         started = time.monotonic()
 
         for attempt in range(attempts):
+
+            if not ai_enabled():
+                raise GatewayDenied(
+                    "AI is disabled in this deployment"
+                )
 
             # Recheck permissions and reserve usage before
             # every outbound request, including retries.

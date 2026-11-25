@@ -39,7 +39,22 @@ MAX_SETTINGS_BODY = 4096
 
 MAX_SQLITE_INTEGER = 9_223_372_036_854_775_807
 
+from aegis.security.request_storage import (
+    public_runtime,
+    request_database,
+)
+
+
 service = SettingsService()
+
+
+def current_service():
+    if public_runtime():
+        return SettingsService(
+            request_database(service.path),
+        )
+
+    return service
 
 
 def fail(
@@ -193,7 +208,7 @@ def execute(operation, *args, mutation=False):
 @router.get("")
 def get_settings():
 
-    return execute(service.get)
+    return execute(current_service().get)
 
 
 @router.patch("")
@@ -206,7 +221,7 @@ async def patch_settings(request: Request):
 
     return await run_in_threadpool(
         execute,
-        service.update,
+        current_service().update,
         payload.changes,
         payload.expected_revision,
         mutation=True,
@@ -223,7 +238,7 @@ async def reset_settings(request: Request):
 
     return await run_in_threadpool(
         execute,
-        service.reset,
+        current_service().reset,
         payload.expected_revision,
         mutation=True,
     )
@@ -232,7 +247,7 @@ async def reset_settings(request: Request):
 @router.get("/providers")
 def get_providers():
 
-    return execute(service.providers)
+    return execute(current_service().providers)
 
 
 @router.get("/audit")
@@ -281,7 +296,7 @@ def get_audit(request: Request):
     )
 
     return execute(
-        service.audit,
+        current_service().audit,
         limit,
         before_id,
     )
@@ -290,4 +305,4 @@ def get_audit(request: Request):
 @router.get("/storage")
 def get_storage():
 
-    return execute(service.storage)
+    return execute(current_service().storage)

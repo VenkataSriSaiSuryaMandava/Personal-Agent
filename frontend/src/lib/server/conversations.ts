@@ -1,6 +1,10 @@
 import type { NextRequest } from "next/server";
 
-import { backendOrigin } from "./backend-origin";
+import {
+  sessionBackend,
+  sessionGateway,
+  sessionBearer,
+} from "./backend-origin";
 
 import {
   authResponse,
@@ -10,7 +14,7 @@ import {
   requireSession,
 } from "./auth";
 
-const BASE = backendOrigin() + "/api/v1/conversations";
+const BASE = "/api/v1/conversations";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -60,8 +64,8 @@ export async function historyGateway(
     );
   }
 
-  const gateway = process.env.AEGIS_GATEWAY_TOKEN;
   const session = readSession(request);
+  const gateway = sessionGateway(session);
 
   if (!session || !gateway || gateway.length < 64) {
     return authResponse(
@@ -72,7 +76,7 @@ export async function historyGateway(
 
   const headers = new Headers({
     "x-aegis-gateway-token": gateway,
-    Authorization: `Bearer ${session}`,
+    Authorization: `Bearer ${sessionBearer(session)}`,
   });
 
   let body: string | undefined;
@@ -150,7 +154,7 @@ export async function historyGateway(
 
   try {
     const response = await fetch(
-      BASE + (id ? "/" + id : "") + query,
+      sessionBackend(session) + BASE + (id ? "/" + id : "") + query,
       {
         method,
         headers,

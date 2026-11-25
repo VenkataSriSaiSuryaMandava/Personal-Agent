@@ -6,6 +6,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from aegis.security.gateway import GatewayDenied
+from aegis.security.runtime_policy import ai_enabled
 from aegis.storage.database import DATABASE_PATH
 from aegis.storage.settings import (
     SettingsUnavailable,
@@ -25,6 +26,9 @@ class RuntimeControls:
         self.path = path
 
     def require_cloud(self) -> None:
+        if not ai_enabled():
+            raise GatewayDenied("AI is disabled in this deployment")
+
         if os.getenv("AEGIS_EMERGENCY_STOP", "0") != "0":
             raise GatewayDenied("Emergency stop is active")
 

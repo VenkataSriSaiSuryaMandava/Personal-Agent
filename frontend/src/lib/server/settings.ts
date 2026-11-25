@@ -1,4 +1,8 @@
-import { backendOrigin } from "./backend-origin";
+import {
+  sessionBackend,
+  sessionGateway,
+  sessionBearer,
+} from "./backend-origin";
 import type { NextRequest } from "next/server";
 
 import {
@@ -9,7 +13,7 @@ import {
   requireSession,
 } from "./auth";
 
-const BACKEND = backendOrigin() + "/api/v1/settings";
+const BACKEND = "/api/v1/settings";
 const MAX_BODY = 4096;
 
 type Operation =
@@ -47,7 +51,7 @@ export async function settingsGateway(
   if (unauthorized) return unauthorized;
 
   const token = readSession(request);
-  const gateway = process.env.AEGIS_GATEWAY_TOKEN;
+  const gateway = sessionGateway(token);
 
   if (!token || !gateway || gateway.length < 64) {
     return authResponse(
@@ -79,7 +83,7 @@ export async function settingsGateway(
 
   const headers = new Headers({
     "x-aegis-gateway-token": gateway,
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${sessionBearer(token)}`,
   });
 
   let raw: string | undefined;
@@ -151,7 +155,7 @@ export async function settingsGateway(
     // Preserve the original JSON so the authoritative
     // backend can reject duplicate keys and invalid values.
     const response = await fetch(
-      BACKEND + config.suffix + query,
+      sessionBackend(token) + BACKEND + config.suffix + query,
       {
         method: config.method,
         headers,

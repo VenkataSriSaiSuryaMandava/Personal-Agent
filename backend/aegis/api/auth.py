@@ -1,4 +1,17 @@
 import json
+import sqlite3
+
+from aegis.security.public_limits import public_limits
+
+from aegis.security.public_sessions import (
+    PublicCapacityExceeded,
+    public_sessions,
+)
+from aegis.security.request_storage import (
+    public_runtime,
+    request_database,
+)
+from aegis.security.sessions import SessionManager, SessionDenied
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -86,6 +99,24 @@ def read_session_token(request: Request) -> str:
     return token
 
 
+def authenticate_session(token: str) -> int:
+    if not public_runtime():
+        return service.authenticate(token)
+
+    try:
+        return SessionManager(
+            request_database(service.path),
+        ).validate_session(token)
+    except SessionDenied:
+        raise AuthenticationDenied(
+            "Invalid session"
+        ) from None
+    except (sqlite3.Error, OSError):
+        raise AuthenticationUnavailable(
+            "Session storage unavailable"
+        ) from None
+
+
 def require_owner(request: Request) -> int:
 
     trusted_request(request)
@@ -94,7 +125,7 @@ def require_owner(request: Request) -> int:
 
     try:
 
-        return service.authenticate(token)
+        return authenticate_session(token)
 
     except AuthenticationDenied:
 
@@ -144,10 +175,73 @@ async def read_login_request(
         deny(422, "Invalid request")
 
 
+@router.post("/guest")
+async def guest(request: Request):
+    trusted_request(request)
+
+    if not public_runtime():
+        deny(403, "Public sessions are unavailable")
+
+    if request.query_params:
+        deny(422, "Invalid request")
+
+    async for chunk in request.stream():
+        if chunk:
+            deny(422, "Unexpected request body")
+
+    # Resume an existing visitor only after server-side
+    # validation of the gateway, request and session.
+    if request.headers.get("authorization") is not None:
+        token = read_session_token(request)
+
+        def resume():
+            with public_sessions.lease(token):
+                if not public_limits.allow_request(token):
+                    deny(429, "Public request limit reached")
+
+        try:
+            await run_in_threadpool(resume)
+        except SessionDenied:
+            deny(401, "Invalid or expired session")
+        except (sqlite3.Error, OSError):
+            deny(503, "Public session unavailable")
+
+        return JSONResponse(
+            content=LoginResponse(
+                session_token=token,
+                expires_in=SESSION_DURATION,
+            ).model_dump(),
+            headers=SECURITY_HEADERS,
+        )
+
+    if not public_limits.allow_creation():
+        deny(429, "Public session creation limit reached")
+
+    try:
+        token = await run_in_threadpool(
+            public_sessions.create,
+        )
+    except PublicCapacityExceeded:
+        deny(429, "Public session capacity reached")
+    except (sqlite3.Error, OSError, RuntimeError):
+        deny(503, "Public session unavailable")
+
+    return JSONResponse(
+        content=LoginResponse(
+            session_token=token,
+            expires_in=SESSION_DURATION,
+        ).model_dump(),
+        headers=SECURITY_HEADERS,
+    )
+
+
 @router.post("/login")
 async def login(request: Request):
 
     trusted_request(request)
+
+    if public_runtime():
+        deny(403, "Owner login unavailable in public mode")
 
     payload = await read_login_request(request)
 
@@ -198,7 +292,7 @@ def session(request: Request):
 
     try:
 
-        service.authenticate(token)
+        authenticate_session(token)
 
     except AuthenticationDenied:
 
@@ -223,7 +317,10 @@ def logout(request: Request):
 
     try:
 
-        service.logout(token)
+        if public_runtime():
+            public_sessions.revoke(token)
+        else:
+            service.logout(token)
 
     except AuthenticationUnavailable:
 

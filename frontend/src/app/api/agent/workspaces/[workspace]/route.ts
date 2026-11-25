@@ -1,3 +1,4 @@
+import { rejectWorkspaceSession } from "@/lib/server/workspace-session";
 import type { NextRequest } from "next/server";
 
 import {
@@ -14,6 +15,11 @@ async function handle(
   request: NextRequest,
   context: Context,
 ) {
+  const sessionRejected =
+    rejectWorkspaceSession(request);
+
+  if (sessionRejected) return sessionRejected;
+
   const { workspace } = await context.params;
 
   return workspaceGateway(

@@ -26,7 +26,7 @@ export default function Header({
       <div className="header-actions">
         <span className="mode-label">
           <Shield size={14} />
-          {guest ? "Guest workspace" : "Owner workspace"}
+          {guest ? "Public workspace" : "Owner workspace"}
         </span>
 
         <button

@@ -1,8 +1,11 @@
+import { rejectWorkspaceSession } from "@/lib/server/workspace-session";
+import { guestSession } from "@/lib/server/backend-origin";
 import type { NextRequest } from "next/server";
 import { requireSession, readSession } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import {
   callBackend,
+  publicRuntime,
   rejectRequest,
 } from "@/lib/server/backend";
 
@@ -10,6 +13,23 @@ export async function POST(request: NextRequest) {
   const rejected = rejectRequest(request);
 
   if (rejected) return rejected;
+
+  if (publicRuntime() || guestSession(readSession(request))) {
+    return NextResponse.json(
+      { detail: "AI is disabled in this deployment" },
+      {
+        status: 403,
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
+  }
+
+
+
+  const sessionRejected =
+    rejectWorkspaceSession(request);
+
+  if (sessionRejected) return sessionRejected;
 
   const unauthorized = await requireSession(request);
   if (unauthorized) return unauthorized;

@@ -1,0 +1,293 @@
+main.aegis-auth-screen {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 32px 20px;
+  overflow: hidden;
+  color: #eef4ff;
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(37, 99, 235, .21),
+      transparent 54%
+    ),
+    radial-gradient(
+      ellipse at 90% 70%,
+      rgba(29, 78, 216, .15),
+      transparent 45%
+    ),
+    radial-gradient(
+      ellipse at 5% 35%,
+      rgba(14, 116, 144, .13),
+      transparent 40%
+    ),
+    #080e1b;
+}
+
+.aegis-auth-screen::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 150vw;
+  height: 70vh;
+  top: 28%;
+  left: -25%;
+  border-radius: 50%;
+  transform: rotate(-22deg);
+  border-top: 1px solid rgba(96, 165, 250, .16);
+  background: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, .07),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.aegis-auth-screen .aegis-auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  box-sizing: border-box;
+  padding: 34px 36px;
+  border: 1px solid #314768;
+  border-radius: 24px;
+  background: linear-gradient(
+    155deg,
+    #142137,
+    #0e1729 60%
+  );
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, .35),
+    0 0 60px rgba(37, 99, 235, .07),
+    inset 0 1px 0 rgba(147, 197, 253, .09);
+}
+
+.aegis-auth-card .aegis-auth-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 19px;
+  color: #67e8f9;
+  background: linear-gradient(
+    145deg,
+    #183b60,
+    #142b45
+  );
+  border: 1px solid rgba(103, 232, 249, .18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+
+.aegis-auth-card .aegis-auth-eyebrow {
+  color: #67d8ef;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  margin-bottom: 10px;
+}
+
+.aegis-auth-card h1 {
+  margin: 0 0 10px;
+  font-size: 36px;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -.045em;
+  color: #f3f7ff;
+}
+
+.aegis-auth-card h1 span {
+  color: #d5e7ff;
+}
+
+.aegis-auth-card > p {
+  color: #a6b6cc;
+  font-size: 14px;
+  line-height: 1.65;
+  margin: 0 0 24px;
+}
+
+.aegis-auth-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  text-align: left;
+}
+
+.aegis-auth-card form label {
+  color: #dce6f4;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.aegis-auth-card .aegis-auth-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 18px;
+  color: #91a6c2;
+}
+
+.aegis-auth-field > svg {
+  position: absolute;
+  left: 14px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.aegis-auth-card .aegis-auth-field input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0 44px;
+  margin: 0;
+  border: 1px solid #344560;
+  border-radius: 10px;
+  color: #f1f5ff;
+  background: #0a1323;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .18s, box-shadow .18s;
+}
+
+.aegis-auth-field input::placeholder {
+  color: #8394ac;
+}
+
+.aegis-auth-card .aegis-auth-field input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, .12);
+}
+
+.aegis-auth-card .aegis-password-toggle {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  color: #a6b6cc;
+  background: transparent;
+  cursor: pointer;
+}
+
+.aegis-password-toggle:hover {
+  color: #fff;
+  background: rgba(148, 163, 184, .09);
+}
+
+.aegis-auth-card .aegis-auth-submit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+  margin: 4px 0 0;
+  border: 1px solid rgba(74, 222, 128, .17);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #16a34a, #12863d);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: filter .18s, transform .18s;
+}
+
+.aegis-auth-card .aegis-auth-submit:hover:not(:disabled) {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.aegis-auth-guest {
+  margin-top: 22px;
+}
+
+.aegis-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 20px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+}
+
+.aegis-auth-divider::before,
+.aegis-auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #2b3c56;
+}
+
+.aegis-auth-card .aegis-auth-guest-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #405b7e;
+  border-radius: 10px;
+  background: rgba(49, 78, 119, .16);
+  color: #e0eaff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s, border-color .18s;
+}
+
+.aegis-auth-guest-button:hover:not(:disabled) {
+  background: rgba(59, 130, 246, .17);
+  border-color: #76a9e8;
+}
+
+.aegis-auth-card .aegis-auth-guest-note {
+  margin: 13px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #96a8c0;
+  text-align: center;
+}
+
+.aegis-auth-card button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.aegis-auth-card button:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 4px;
+}
+
+@media (max-width: 480px) {
+  main.aegis-auth-screen {
+    padding: 20px 14px;
+  }
+
+  .aegis-auth-screen .aegis-auth-card {
+    padding: 26px 22px;
+    border-radius: 20px;
+  }
+
+  .aegis-auth-card h1 {
+    font-size: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aegis-auth-screen *,
+  .aegis-auth-screen *::before,
+  .aegis-auth-screen *::after {
+    transition: none !important;
+  }
+}

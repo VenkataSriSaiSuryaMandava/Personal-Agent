@@ -298,14 +298,18 @@ def test_document_integrity_failure(
     ("POST", "resume"),
     ("GET", "download"),
 ])
-def test_public_backend_has_no_career_routes(
-    method, endpoint,
+def test_public_career_requires_authentication(
+    method, endpoint, monkeypatch,
 ):
     from fastapi.testclient import TestClient
-    from aegis.demo import app
+    from aegis.main import app
+
+    monkeypatch.setenv("AEGIS_RUNTIME_MODE", "public")
+    monkeypatch.setenv("AEGIS_GATEWAY_TOKEN", "a" * 64)
 
     with TestClient(app) as client:
         assert client.request(
             method,
             "/api/v1/career/" + endpoint,
-        ).status_code == 404
+            headers={"x-aegis-gateway-token": "a" * 64},
+        ).status_code == 401

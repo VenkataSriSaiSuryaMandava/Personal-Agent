@@ -1,5 +1,8 @@
 from pathlib import Path
 
+from aegis.security.request_storage import public_runtime
+from aegis.security.runtime_policy import ai_enabled
+
 from aegis.schemas.settings import (
     AuditEvent,
     AuditResponse,
@@ -42,6 +45,16 @@ SECURITY_FIELDS = frozenset({
 EDITABLE_FIELDS = GENERAL_FIELDS | SECURITY_FIELDS
 
 
+def editable_fields():
+    if public_runtime() or not ai_enabled():
+        return EDITABLE_FIELDS - {
+            "cloud_enabled",
+            "retain_conversations",
+        }
+
+    return EDITABLE_FIELDS
+
+
 class UnsupportedSetting(ValueError):
     """Requested setting is not currently editable."""
 
@@ -50,11 +63,22 @@ def serialize_settings(
     snapshot: SettingsSnapshot,
 ) -> SettingsResponse:
 
+    preferences = snapshot.settings
+
+    if public_runtime() or not ai_enabled():
+        preferences = preferences.model_copy(
+            update={
+                "cloud_enabled": False,
+                "retain_conversations": False,
+                "fallback_enabled": False,
+            },
+        )
+
     return SettingsResponse(
-        settings=snapshot.settings,
+        settings=preferences,
         revision=snapshot.revision,
         updated_at=snapshot.updated_at,
-        editable_fields=sorted(EDITABLE_FIELDS),
+        editable_fields=sorted(editable_fields()),
         security_enforcement_active=True,
     )
 
@@ -84,7 +108,7 @@ class SettingsService:
                 "No settings supplied"
             )
 
-        if not set(changes).issubset(EDITABLE_FIELDS):
+        if not set(changes).issubset(editable_fields()):
             raise UnsupportedSetting(
                 "Setting is not currently editable"
             )
@@ -135,8 +159,19 @@ class SettingsService:
 
         return ProvidersResponse(
             providers=[
-                ProviderStatus(
-                    **provider_diagnostics(identifier)
+                (
+                    ProviderStatus(
+                        provider=identifier,
+                        configured=False,
+                        implemented=identifier == "gemini",
+                        model=None,
+                        status="not_configured",
+                        live_verified=False,
+                    )
+                    if not ai_enabled()
+                    else ProviderStatus(
+                        **provider_diagnostics(identifier)
+                    )
                 )
                 for identifier in PROVIDERS
             ],
@@ -228,6 +263,7 @@ class SettingsService:
             ]
 
         return StorageResponse(
+            local_only=not public_runtime(),
             schema_version=version,
             expected_schema_version=SCHEMA_VERSION,
             integrity=(

@@ -4,7 +4,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 
 import {
@@ -20,7 +19,7 @@ import {
 } from "lucide-react";
 
 import FunctionalWorkspace from "./FunctionalWorkspace";
-import DiscoverPanel, { GuestDiscovery } from "./DiscoverPanel";
+import DiscoverPanel from "./DiscoverPanel";
 import { Search } from "lucide-react";
 
 import {
@@ -881,24 +880,11 @@ function DocumentsPanel() {
   );
 }
 
-function GuestPreview({ children }: { children: ReactNode }) {
-  return (
-    <section className="panel career-panel">
-      <h2>Fictional career preview</h2>
-      <p className="notice">
-        Private profile storage and resume uploads are available
-        only in the local Owner application.
-      </p>
-      {children}
-    </section>
-  );
-}
-
 export default function CareerWorkspace({
-  guest,
+  publicMode,
   onAssistant,
 }: {
-  guest: boolean;
+  publicMode: boolean;
   onAssistant: () => void;
 }) {
   const [section, setSection] =
@@ -919,7 +905,7 @@ export default function CareerWorkspace({
       <header className="career-header">
         <div>
           <span className="eyebrow">
-            {guest ? "GUEST PREVIEW" : "PRIVATE WORKSPACE"}
+            {publicMode ? "PUBLIC WORKSPACE" : "PRIVATE WORKSPACE"}
           </span>
           <div className="career-heading">
             <BriefcaseBusiness size={28}/>
@@ -931,7 +917,7 @@ export default function CareerWorkspace({
         </div>
         <span className="career-privacy">
           <ShieldCheck size={15}/>
-          {guest ? "Synthetic preview" : "Local and private"}
+          {publicMode ? "Temporary isolated session" : "Local and private"}
         </span>
       </header>
       <nav className="career-tabs" aria-label="Career sections">
@@ -956,11 +942,9 @@ export default function CareerWorkspace({
 
       {visited.includes("discover") && (
         <div hidden={section !== "discover"}>
-          {guest ? <GuestDiscovery/> : (
-            <DiscoverPanel
-              onSaved={() => setApplicationVersion(value => value + 1)}
-            />
-          )}
+          <DiscoverPanel
+            onSaved={() => setApplicationVersion(value => value + 1)}
+          />
         </div>
       )}
 
@@ -971,33 +955,20 @@ export default function CareerWorkspace({
         <FunctionalWorkspace
           refreshVersion={applicationVersion}
           workspace="jobs"
-          guest={guest}
+          publicMode={publicMode}
           onAssistant={onAssistant}
         />
       </div>
 
       {visited.includes("profile") && (
         <div hidden={section !== "profile"}>
-        {guest ? (
-          <GuestPreview>
-            <strong>Alex Example — Software Developer</strong>
-            <p>Sample skills: Python, SQL, TypeScript.</p>
-            <p>Sample preference: Full-time, hybrid.</p>
-          </GuestPreview>
-        ) : <ProfilePanel/>}
+          <ProfilePanel/>
         </div>
       )}
 
       {visited.includes("documents") && (
         <div hidden={section !== "documents"}>
-        {guest ? (
-          <GuestPreview>
-            <strong>Sample technical resume</strong>
-            <p className="muted">
-              Fictional preview only. No files are uploaded or stored.
-            </p>
-          </GuestPreview>
-        ) : <DocumentsPanel/>}
+          <DocumentsPanel/>
         </div>
       )}
     </div>

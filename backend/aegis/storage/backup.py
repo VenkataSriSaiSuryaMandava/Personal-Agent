@@ -15,6 +15,11 @@ def create_backup(
 ) -> Path:
     """Create a consistent, private SQLite backup."""
 
+    if os.getenv("AEGIS_RUNTIME_MODE") == "public":
+        raise PermissionError(
+            "Backup administration unavailable in public mode"
+        )
+
     if not source.is_file() or source.is_symlink():
         raise FileNotFoundError(
             "Source database is unavailable"

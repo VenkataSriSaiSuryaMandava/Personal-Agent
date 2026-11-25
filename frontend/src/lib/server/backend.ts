@@ -1,35 +1,81 @@
-import { backendOrigin } from "./backend-origin";
+import {
+  guestSession,
+  sessionBackend,
+  sessionGateway,
+  sessionBearer,
+} from "./backend-origin";
 import { NextResponse } from "next/server";
 
-const BACKEND_URL = backendOrigin();
 
-const LOCAL_ORIGINS = new Set([
-  "http://127.0.0.1:3000",
-  "http://localhost:3000",
-]);
+export function publicRuntime(): boolean {
+  return process.env.AEGIS_RUNTIME_MODE === "public";
+}
+
+export function publicOrigin(): string | null {
+  if (!publicRuntime()) return null;
+
+  const origin =
+    process.env.AEGIS_PUBLIC_ORIGIN ??
+    "https://aegis-ai-369j.onrender.com";
+
+  const allowed = new Set([
+    "https://aegis-ai-369j.onrender.com",
+    "http://127.0.0.1:8080",
+  ]);
+
+  return allowed.has(origin) ? origin : null;
+}
 
 export function rejectRequest(request: Request) {
-  if (process.env.AEGIS_PUBLIC_DEMO === "1" || process.env.AEGIS_LOCAL_BACKEND !== "1") {
+  const isPublic = publicRuntime();
+
+  if (
+    !isPublic &&
+    (
+      process.env.AEGIS_PUBLIC_DEMO === "1" ||
+      process.env.AEGIS_LOCAL_BACKEND !== "1"
+    )
+  ) {
     return NextResponse.json(
-      { detail: "Local backend access is disabled" },
+      { detail: "Backend access is disabled" },
       { status: 403 }
     );
   }
 
   const host = request.headers.get("host");
 
-  if (host !== "127.0.0.1:3000" && host !== "localhost:3000") {
-    return NextResponse.json(
-      { detail: "Invalid host" },
-      { status: 403 }
-    );
+  let expectedOrigin: string;
+
+  if (isPublic) {
+    const configured = publicOrigin();
+
+    if (!configured || host !== new URL(configured).host) {
+      return NextResponse.json(
+        { detail: "Invalid host" },
+        { status: 403 }
+      );
+    }
+
+    expectedOrigin = configured;
+  } else {
+    if (
+      host !== "127.0.0.1:3000" &&
+      host !== "localhost:3000"
+    ) {
+      return NextResponse.json(
+        { detail: "Invalid host" },
+        { status: 403 }
+      );
+    }
+
+    expectedOrigin = `http://${host}`;
   }
 
   const origin = request.headers.get("origin");
 
   if (
     (request.method !== "GET" || origin !== null) &&
-    !LOCAL_ORIGINS.has(origin ?? "")
+    origin !== expectedOrigin
   ) {
     return NextResponse.json(
       { detail: "Invalid request origin" },
@@ -45,10 +91,20 @@ export async function callBackend(
   init: RequestInit = {},
   session?: string
 ) {
+  if ((publicRuntime() || guestSession(session)) && endpoint !== "/api/v1/status") {
+    return NextResponse.json(
+      { detail: "AI is disabled in this deployment" },
+      {
+        status: 403,
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
+  }
+
   const headers = new Headers(init.headers);
 
   {
-    const token = process.env.AEGIS_GATEWAY_TOKEN;
+    const token = sessionGateway(session);
 
     if (!token || token.length < 64) {
       return NextResponse.json(
@@ -61,12 +117,12 @@ export async function callBackend(
   }
 
   if (session) {
-    headers.set("Authorization", `Bearer ${session}`);
+    headers.set("Authorization", `Bearer ${sessionBearer(session)}`);
   }
 
   try {
     const response = await fetch(
-      `${BACKEND_URL}${endpoint}`,
+      `${sessionBackend(session)}${endpoint}`,
       {
         ...init,
         headers,

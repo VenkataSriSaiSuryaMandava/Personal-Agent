@@ -57,7 +57,7 @@ const SECTIONS = [
 ] as const;
 
 type Props = {
-  guest?: boolean;
+  publicMode?: boolean;
   section: SettingsSection;
   onSectionChange: (section: SettingsSection) => void;
   snapshot: SettingsSnapshot;
@@ -117,7 +117,7 @@ function formatTime(seconds: number) {
 }
 
 function GeneralSettings({
-  guest,
+  publicMode,
   snapshot,
   busy,
   onSave,
@@ -151,8 +151,8 @@ function GeneralSettings({
     <section className="panel as-panel">
       <h2>General preferences</h2>
       <p className="as-description">
-        {guest
-          ? "Personalize this preview. Changes are temporary."
+        {publicMode
+          ? "Personalize your workspace. Changes are saved for this session."
           : "Personalize your workspace. Changes are stored locally."}
       </p>
 
@@ -532,7 +532,7 @@ function SecurityControl({
 }
 
 function SecuritySettings({
-  guest,
+  publicMode,
   snapshot,
   busy,
   onSave,
@@ -559,11 +559,13 @@ function SecuritySettings({
       />
 
       <SettingRow
-        title="Owner authentication"
-        description="Required to access your private workspace."
+        title={publicMode ? "Session authentication" : "Owner authentication"}
+        description={publicMode
+          ? "Access is restricted to your isolated visitor session."
+          : "Required to access your private workspace."}
       >
-        <Status tone={guest ? "neutral" : "good"}>
-          {guest ? "Owner required" : "Protected"}
+        <Status tone="good">
+          {publicMode ? "Isolated session" : "Protected"}
         </Status>
       </SettingRow>
 
@@ -583,7 +585,7 @@ function SecuritySettings({
 }
 
 function PrivacySettings({
-  guest,
+  publicMode,
   snapshot,
   busy,
   onSave,
@@ -600,9 +602,9 @@ function PrivacySettings({
         field="cloud_enabled"
         title="Cloud AI access"
         description="Allow individually approved public or synthetic requests."
-        enabled={snapshot.settings.cloud_enabled}
+        enabled={!publicMode && snapshot.settings.cloud_enabled}
         busy={busy}
-        editable={snapshot.editable_fields.includes(
+        editable={!publicMode && snapshot.editable_fields.includes(
           "cloud_enabled"
         )}
         enforced={snapshot.security_enforcement_active}
@@ -614,12 +616,12 @@ function PrivacySettings({
         field="retain_conversations"
         title="Conversation history"
         description="Save completed conversations to your private local database."
-        enabled={snapshot.settings.retain_conversations}
+        enabled={!publicMode && snapshot.settings.retain_conversations}
         busy={busy}
-        editable={!guest && snapshot.editable_fields.includes(
+        editable={!publicMode && snapshot.editable_fields.includes(
           "retain_conversations"
         )}
-        enforced={!guest}
+        enforced={snapshot.security_enforcement_active}
         onSave={onSave}
       />
 
@@ -630,8 +632,8 @@ function PrivacySettings({
       </Notice>
 
       <Notice>
-        {guest
-          ? "Saved history requires Owner access."
+        {publicMode
+          ? "AI and new AI conversation history are disabled in this deployment."
           : "Disabling history stops new saves. Previously saved conversations can still be reopened or deleted. Local storage is not application-encrypted."}
       </Notice>
     </section>
@@ -645,7 +647,7 @@ function StorageSettings({
 }) {
   return (
     <section className="panel as-panel">
-      <h2>Local storage</h2>
+      <h2>Workspace storage</h2>
 
       <p className="as-description">
         Database health and persistence information.
@@ -699,7 +701,7 @@ function StorageSettings({
 
           <SettingRow title="Storage location">
             <Status tone={storage.local_only ? "good" : "neutral"}>
-              {storage.local_only ? "Local device" : "Unknown"}
+              {storage.local_only ? "Local device" : "Temporary hosted session"}
             </Status>
           </SettingRow>
 
@@ -722,9 +724,9 @@ function StorageSettings({
 }
 
 export default function SettingsWorkspace(
-  props: Props & { guest?: boolean }
+  props: Props
 ) {
-  const guest = props.guest === true;
+  const publicMode = props.publicMode === true;
   const safeProps: Props = props;
   const {
     snapshot,
@@ -749,7 +751,6 @@ export default function SettingsWorkspace(
   const [auditBusy, setAuditBusy] = useState(false);
 
   useEffect(() => {
-    if (guest) return;
 
     let active = true;
 
@@ -785,10 +786,10 @@ export default function SettingsWorkspace(
     return () => {
       active = false;
     };
-  }, [snapshot.revision, refresh, guest]);
+  }, [snapshot.revision, refresh]);
 
   async function loadOlder() {
-    if (guest || !audit?.next_before_id || auditBusy) return;
+    if (!audit?.next_before_id || auditBusy) return;
 
     setAuditBusy(true);
 
@@ -837,16 +838,14 @@ export default function SettingsWorkspace(
           ))}
 
           <div className="as-revision">
-            {guest ? "Guest preview" : `Local revision ${snapshot.revision}`}
+            {`Revision ${snapshot.revision}`}
           </div>
         </nav>
 
         <div className="as-content">
           <div className="as-content-toolbar">
             <span className="as-muted">
-              {guest
-                ? "Guest preview · No private settings loaded"
-                : `Last saved: ${formatTime(snapshot.updated_at)}`}
+              {`Last saved: ${formatTime(snapshot.updated_at)}`}
             </span>
 
             <button
@@ -863,11 +862,10 @@ export default function SettingsWorkspace(
             </button>
           </div>
 
-          {guest && (
+          {publicMode && (
             <Notice>
-              Guest preferences are temporary.
-              Live AI, private settings, credentials and
-              security changes require Owner access.
+              Preferences and records belong to this temporary
+              public session. AI is disabled by deployment policy.
             </Notice>
           )}
 
@@ -889,7 +887,7 @@ export default function SettingsWorkspace(
           )}
 
           {section === "integrations" && (
-            <IntegrationPanel guest={guest}/>
+            <IntegrationPanel/>
           )}
 
           {section === "security" && (

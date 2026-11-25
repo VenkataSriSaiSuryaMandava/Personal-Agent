@@ -92,42 +92,6 @@ function externalSearch(
   return url.href;
 }
 
-export function GuestDiscovery() {
-  return (
-    <section className="panel career-panel discover-panel">
-      <div className="career-panel-heading">
-        <h2>Discover opportunities</h2>
-        <p className="muted">
-          Fictional preview. Live employer sources are available
-          only in the private Owner application.
-        </p>
-      </div>
-
-      {[
-        ["Software Engineer", "Example Technologies", "San Francisco"],
-        ["Data Engineer", "Sample Analytics", "Remote"],
-        ["Full Stack Developer", "Demo Systems", "Seattle"],
-      ].map(([title, company, location]) => (
-        <article className="discover-job" key={title}>
-          <div className="discover-job-heading">
-            <Building2 size={24}/>
-            <div>
-              <h3>{title}</h3>
-              <p>{company}</p>
-              <p className="muted">{location}</p>
-            </div>
-          </div>
-          <span className="discover-tag">Fictional listing</span>
-          <p className="muted">
-            Personalized matching is available only in the
-            private Owner application.
-          </p>
-        </article>
-      ))}
-    </section>
-  );
-}
-
 export default function DiscoverPanel({
   onSaved,
 }: {

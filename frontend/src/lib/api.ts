@@ -1,3 +1,4 @@
+import { workspaceFetch } from "@/lib/session-client";
 export interface SystemStatusResponse {
   backend: string;
   mode: string;
@@ -18,7 +19,7 @@ async function request<T>(
   url: string,
   options?: RequestInit
 ): Promise<T> {
-  const response = await fetch(url, {
+  const response = await workspaceFetch(url, {
     ...options,
     cache: "no-store",
     signal: AbortSignal.timeout(8000),

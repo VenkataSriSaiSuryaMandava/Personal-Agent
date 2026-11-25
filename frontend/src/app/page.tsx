@@ -6,13 +6,12 @@ import WorkspaceApp from "./WorkspaceApp";
 async function RuntimeWorkspace() {
   await connection();
 
-  const ownerAvailable =
-    process.env.AEGIS_PUBLIC_DEMO !== "1" &&
-    process.env.AEGIS_LOCAL_BACKEND === "1";
+  const publicMode =
+    process.env.AEGIS_RUNTIME_MODE === "public";
 
-  return (
-    <WorkspaceApp ownerAvailable={ownerAvailable} />
-  );
+  return <WorkspaceApp publicMode={publicMode} />;
+
+
 }
 
 export default function Home() {

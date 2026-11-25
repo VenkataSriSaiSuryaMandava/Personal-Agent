@@ -1,95 +1,501 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
 image="${1:-aegis-demo:local}"
-name="aegis-demo-smoke-$$"
+name="aegis-public-smoke-$$"
+work="$(mktemp -d)"
+chmod 700 "$work"
+
+origin="https://aegis-ai-369j.onrender.com"
+host="aegis-ai-369j.onrender.com"
+
 cleanup() {
   local rc=$?
-  if (( rc != 0 )); then docker logs "$name" 2>/dev/null || true; fi
+
+  if (( rc != 0 )); then
+    docker logs --tail 50 "$name" 2>/dev/null || true
+  fi
+
   docker rm -f "$name" >/dev/null 2>&1 || true
+
+  rm -f "$work/a.cookies" "$work/b.cookies" \
+    "$work/a.headers" "$work/b.headers" "$work/body"
+
+  rmdir "$work"
   exit "$rc"
 }
+
 trap cleanup EXIT
 
-docker run -d --name "$name" --memory=512m --memory-swap=512m -e PORT=10000 -p 127.0.0.1::10000 "$image" >/dev/null
+docker run -d \
+  --name "$name" \
+  --memory=512m \
+  --memory-swap=512m \
+  -e PORT=10000 \
+  -e AEGIS_PUBLIC_ORIGIN="$origin" \
+  -p 127.0.0.1::10000 \
+  "$image" >/dev/null
+
 port="$(docker port "$name" 10000/tcp | head -n 1)"
 base="http://$port"
+
+request() {
+  curl -sS --max-time 20 \
+    -H "Host: $host" \
+    "$@"
+}
+
+status() {
+  request \
+    -o "$work/body" \
+    -w '%{http_code}' \
+    "$@"
+}
+
 ready=0
+
 for (( i=0; i<60; i++ )); do
-  if curl -fsS --max-time 3 "$base/api/demo/health" >/dev/null 2>&1; then ready=1; break; fi
+  if request -f "$base/api/demo/health" \
+    >/dev/null 2>&1
+  then
+    ready=1
+    break
+  fi
+
   sleep 1
 done
-if (( ready == 0 )); then echo 'Demo health check failed' >&2; exit 1; fi
-curl -fsS --max-time 10 "$base/" | grep -F 'Your command center.' >/dev/null
-curl -fsS --max-time 10 "$base/" | grep -F 'Sign in as Owner to use AI' >/dev/null
-for id in search systems project; do
-  curl -fsS --max-time 10 "$base/api/demo/example?id=$id" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["mode"]=="recorded_demo" and d["prompt"] and d["answer"]'
-done
-status() { curl -sS --max-time 10 -o /dev/null -w '%{http_code}' -X "$1" "$base$2"; }
-test "$(status GET '/api/demo/example?id=invalid')" = 400
-test "$(status GET '/api/demo/example?id=search&id=project')" = 400
-for path in /api/agent/status /api/auth/session /api/agent/settings /api/agent/settings/providers /api/agent/settings/storage /api/agent/settings/audit; do test "$(status GET "$path")" = 403; done
-for path in /api/agent/chat /api/agent/inference /api/agent/conversation /api/auth/login /api/auth/logout; do test "$(status POST "$path")" = 403; done
-test "$(status POST '/api/demo/example')" = 405
-test "$(status PATCH '/api/agent/settings')" = 403
-test "$(status POST '/api/agent/settings/reset')" = 403
-# Private app source, key and gateway token must not be present in the runtime.
-docker exec "$name" sh -c 'test ! -e /app/demo/aegis && test -z "${GEMINI_API_KEY:-}" && test -z "${AEGIS_GATEWAY_TOKEN:-}" && test "$(id -u)" != 0'
-test "$(docker inspect --format '{{.State.OOMKilled}}' "$name")" = false
-docker stats --no-stream --format 'Memory usage: {{.MemUsage}}' "$name"
-echo 'Public demo smoke checks passed.'
 
-# Conversation history must remain inaccessible publicly.
+test "$ready" = 1
+
+request -f "$base/api/demo/health" |
+  python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+assert d == {"status": "ok", "mode": "public"}
+'
+
+echo "PASS: Shared backend health"
+
+test "$(status "$base/")" = 200
+grep -F 'Aegis' "$work/body" >/dev/null
+
+echo "PASS: Application entry"
+
+echo "===== ANONYMOUS ACCESS ====="
+
 for path in \
-  /api/agent/conversations \
-  /api/agent/conversations/00000000-0000-0000-0000-000000000000
+  auth/session \
+  agent/settings \
+  agent/settings/providers \
+  agent/settings/storage \
+  agent/settings/audit \
+  agent/conversations \
+  agent/career/profile \
+  agent/career/resumes \
+  agent/career/sources \
+  agent/career/jobs
 do
-  test "$(status GET "$path")" = 403
+  test "$(status "$base/api/$path")" = 401
+  echo "PASS: Anonymous $path denied"
 done
 
-for method in PATCH DELETE
+for workspace in \
+  summary tasks jobs email calendar research coding browser memory approvals
 do
-  test "$(status "$method" '/api/agent/conversations/00000000-0000-0000-0000-000000000000')" = 403
+  test "$(status "$base/api/agent/workspaces/$workspace")" = 401
 done
 
-echo 'Public conversation history isolation passed.'
+echo "PASS: Anonymous workspace access denied"
 
-# Local workspace APIs must remain inaccessible publicly.
+test "$(status "$base/api/demo/example?id=search")" = 410
 
-for workspace in summary tasks jobs email calendar research coding browser memory approvals
+echo "PASS: Recorded responses retired"
+
+echo "===== ORIGIN AND HOST PROTECTION ====="
+
+test "$(status -X POST "$base/api/auth/guest")" = 403
+
+test "$(status -X POST \
+  -H 'Origin: https://example.invalid' \
+  "$base/api/auth/guest")" = 403
+
+test "$(curl -sS --max-time 10 \
+  -o /dev/null -w '%{http_code}' \
+  -H 'Host: example.invalid' \
+  "$base/api/auth/session")" = 403
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  "$base/api/auth/login")" = 403
+
+echo "PASS: Origin, host and Owner login protection"
+
+echo "===== PUBLIC SESSION INPUT VALIDATION ====="
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  -H 'Content-Type: application/json' \
+  --data '{}' \
+  "$base/api/auth/guest")" = 422
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  "$base/api/auth/guest?unexpected=1")" = 422
+
+echo "PASS: Unexpected session input rejected"
+
+echo "===== CREATE TWO ISOLATED VISITOR SESSIONS ====="
+
+for visitor in a b
 do
-  test "$(status GET "/api/agent/workspaces/$workspace")" = 403
+  code="$(status -X POST \
+    -H "Origin: $origin" \
+    -c "$work/$visitor.cookies" \
+    -D "$work/$visitor.headers" \
+    "$base/api/auth/guest")"
+
+  echo "Visitor $visitor session HTTP status: $code"
+  test "$code" = 200
+
+  python3 - "$work/body" "$work/$visitor.headers" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+body = json.loads(Path(sys.argv[1]).read_text())
+
+assert body == {"authenticated": True, "role": "guest"}
+
+headers = Path(sys.argv[2]).read_text().lower()
+
+cookie = next(
+    line for line in headers.splitlines()
+    if line.startswith("set-cookie: aegis_session=")
+)
+
+for attribute in (
+    "httponly",
+    "secure",
+    "samesite=strict",
+    "path=/",
+):
+    assert attribute in cookie, attribute
+PY
+
 done
 
-for workspace in tasks jobs email calendar research coding browser memory approvals
-do
-  test "$(status POST "/api/agent/workspaces/$workspace")" = 403
+# Use the HTTPS cookie explicitly for local transport.
+# Never print session tokens.
+cookie_for() {
+  python3 - "$work/$1.headers" <<'COOKIEPY'
+import re
+import sys
+from pathlib import Path
 
-  for method in PATCH DELETE
+headers = Path(sys.argv[1]).read_text()
+
+matches = re.findall(
+    r"^set-cookie:\s*(aegis_session=[A-Za-z0-9_-]{43});",
+    headers,
+    re.IGNORECASE | re.MULTILINE,
+)
+
+assert len(matches) == 1
+print(matches[0])
+COOKIEPY
+}
+
+session_a="$(cookie_for a)"
+session_b="$(cookie_for b)"
+
+binding_for() {
+  python3 - "$work/$1.headers" <<'BINDINGPY'
+import re
+import sys
+from pathlib import Path
+
+headers = Path(sys.argv[1]).read_text()
+
+matches = re.findall(
+    r"^x-aegis-session-binding:\s*([a-f0-9]{64})\s*$",
+    headers,
+    re.IGNORECASE | re.MULTILINE,
+)
+
+assert len(matches) == 1
+print(matches[0])
+BINDINGPY
+}
+
+binding_a="$(binding_for a)"
+binding_b="$(binding_for b)"
+
+test -n "$binding_a"
+test -n "$binding_b"
+test "$binding_a" != "$binding_b"
+
+echo "PASS: Independent session verification bindings"
+
+test -n "$session_a"
+test -n "$session_b"
+test "$session_a" != "$session_b"
+
+echo "PASS: Independent HTTPS-only session cookies"
+
+echo "===== AUTHENTICATED REAL WORKSPACES ====="
+
+for visitor in a b
+do
+  if [ "$visitor" = a ]; then
+    session="$session_a"
+    binding="$binding_a"
+  else
+    session="$session_b"
+    binding="$binding_b"
+  fi
+  for path in \
+    auth/session \
+    agent/settings \
+    agent/settings/providers \
+    agent/settings/storage \
+    agent/settings/audit \
+    agent/conversations \
+    agent/career/profile \
+    agent/career/resumes \
+    agent/career/sources \
+    agent/career/jobs
   do
-    test "$(status "$method" "/api/agent/workspaces/$workspace/00000000-0000-0000-0000-000000000000")" = 403
+    test "$(status \
+      -H "Cookie: $session" \
+      -H "x-aegis-session-binding: $binding" \
+      "$base/api/$path")" = 200
+  done
+
+  for workspace in \
+    summary tasks jobs email calendar research coding browser memory approvals
+  do
+    test "$(status \
+      -H "Cookie: $session" \
+      -H "x-aegis-session-binding: $binding" \
+      "$base/api/agent/workspaces/$workspace")" = 200
   done
 done
 
-echo 'Public workspace isolation passed.'
+echo "PASS: Both sessions access real backend services"
 
-# Career profile and resume APIs are private.
-for path in profile resumes resume download
+echo "===== CROSS-VISITOR RECORD ISOLATION ====="
+
+task_url="$base/api/agent/workspaces/tasks"
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
+  -H 'Content-Type: application/json' \
+  --data '{"title":"Synthetic isolation test","status":"todo"}' \
+  "$task_url")" = 200
+
+test "$(status \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$task_url")" = 200
+
+grep -F 'Synthetic isolation test' "$work/body" >/dev/null
+
+test "$(status \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$task_url")" = 200
+
+if grep -F 'Synthetic isolation test' "$work/body" >/dev/null
+then
+  echo "Cross-session data exposure detected" >&2
+  exit 1
+fi
+
+echo "PASS: Visitor records are isolated"
+
+echo "===== SESSION BINDING SECURITY ====="
+
+test "$(status \
+  -H "Cookie: $session_a" \
+  "$task_url")" = 401
+
+test "$(status \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$task_url")" = 401
+
+test "$(status \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$task_url")" = 401
+
+echo "PASS: Missing and mismatched bindings denied"
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_a" \
+  -H 'Content-Type: application/json' \
+  --data '{"title":"Rejected stale-tab mutation","status":"todo"}' \
+  "$task_url")" = 401
+
+test "$(status \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$task_url")" = 200
+
+if grep -F 'Rejected stale-tab mutation' "$work/body" >/dev/null
+then
+  echo "Stale session mutation detected" >&2
+  exit 1
+fi
+
+echo "PASS: Stale session cannot modify another workspace"
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$base/api/auth/logout")" = 401
+
+test "$(status \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$task_url")" = 200
+
+echo "PASS: Stale session cannot revoke another session"
+
+test "$(status -X POST \
+  -H "Origin: https://example.invalid" \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
+  -H 'Content-Type: application/json' \
+  --data '{}' \
+  "$task_url")" = 403
+
+test "$(status -X POST \
+  "$task_url")" = 403
+
+echo "PASS: Origin protection remains mandatory"
+
+
+echo "===== PUBLIC AI RESTRICTION ====="
+
+for endpoint in chat inference conversation
 do
-  test "$(status GET "/api/agent/career/$path")" = 403
+  for payload in '{}' '{"message":"Synthetic test"}'
+  do
+    code="$(status -X POST \
+      -H "Origin: $origin" \
+      -H "Cookie: $session_a" \
+      -H "x-aegis-session-binding: $binding_a" \
+      -H 'Content-Type: application/json' \
+      --data "$payload" \
+      "$base/api/agent/$endpoint")"
+
+    echo "AI endpoint $endpoint: HTTP $code"
+    test "$code" = 403
+
+    python3 - "$work/body" <<'POLICYPY'
+import json
+import sys
+from pathlib import Path
+
+body = json.loads(Path(sys.argv[1]).read_text())
+
+assert body["detail"] == "AI is disabled in this deployment"
+POLICYPY
+  done
 done
 
-test "$(status PATCH '/api/agent/career/profile')" = 403
-test "$(status POST '/api/agent/career/resumes')" = 403
-test "$(status POST '/api/agent/career/resume')" = 403
+echo "PASS: Public AI endpoints denied"
 
-for path in sources jobs job match
-do
-  test "$(status GET "/api/agent/career/$path")" = 403
-done
+test "$(status \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$base/api/agent/settings")" = 200
 
-for path in sources source job
-do
-  test "$(status POST "/api/agent/career/$path")" = 403
-done
+python3 - "$work/body" <<'PY'
+import json
+import sys
+from pathlib import Path
 
-echo 'Public career and discovery isolation passed.'
+d = json.loads(Path(sys.argv[1]).read_text())
+
+for field in ("cloud_enabled", "retain_conversations"):
+    assert d["settings"][field] is False
+    assert field not in d["editable_fields"]
+PY
+
+echo "PASS: AI preferences locked"
+
+echo "===== PUBLIC DATABASE METADATA ====="
+
+test "$(status \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$base/api/agent/settings/storage")" = 200
+
+python3 - "$work/body" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+d = json.loads(Path(sys.argv[1]).read_text())
+
+assert d["schema_version"] == 8
+assert d["integrity"] == "ok"
+assert d["local_only"] is False
+PY
+
+echo "PASS: Shared database schema and public metadata"
+
+echo "===== SESSION REVOCATION ====="
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$base/api/auth/logout")" = 200
+
+test "$(status \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$task_url")" = 401
+
+test "$(status \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$task_url")" = 200
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$base/api/auth/logout")" = 200
+
+echo "PASS: Logout revokes only the selected session"
+
+echo "===== CONTAINER SECURITY ====="
+
+docker exec "$name" sh -c '
+  test "$(id -u)" != 0
+  test -z "${GEMINI_API_KEY:-}"
+  test -z "${GROQ_API_KEY:-}"
+  test -z "${AEGIS_OWNER_PASSWORD:-}"
+  test ! -e "$HOME/Library/Application Support/AegisAI/aegis.sqlite3"
+'
+
+test "$(docker inspect \
+  --format '{{.State.OOMKilled}}' "$name")" = false
+
+test "$(docker inspect \
+  --format '{{.State.Running}}' "$name")" = true
+
+docker stats --no-stream \
+  --format 'Memory usage: {{.MemUsage}}' "$name"
+
+echo "PASS: Non-root runtime and resource checks"
+echo "All public runtime smoke checks passed."

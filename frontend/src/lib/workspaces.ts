@@ -1,3 +1,4 @@
+import { workspaceFetch } from "@/lib/session-client";
 import type {
   Workspace,
 } from "./navigation";
@@ -287,7 +288,7 @@ async function request<T>(
     throw new Error("Invalid workspace endpoint.");
   }
 
-  const response = await fetch(url, {
+  const response = await workspaceFetch(url, {
     method,
     body,
     headers: body === undefined

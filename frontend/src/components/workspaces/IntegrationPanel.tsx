@@ -30,10 +30,8 @@ const CONNECTIONS = {
 
 export default function IntegrationPanel({
   workspace,
-  guest = false,
 }: {
   workspace?: RecordWorkspace;
-  guest?: boolean;
 }) {
   const groups = workspace
     ? Object.entries(CONNECTIONS).filter(
@@ -85,9 +83,7 @@ export default function IntegrationPanel({
       </div>
 
       <p className="muted">
-        {guest
-          ? "Guest mode has no external account permissions."
-          : "Future integrations require explicit authorization. No credentials are collected here."}
+        Future integrations require explicit authorization. No credentials are collected here.
       </p>
     </section>
   );

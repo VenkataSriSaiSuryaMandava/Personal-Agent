@@ -1,6 +1,10 @@
 import type { NextRequest } from "next/server";
 
-import { backendOrigin } from "./backend-origin";
+import {
+  sessionBackend,
+  sessionGateway,
+  sessionBearer,
+} from "./backend-origin";
 
 import {
   authResponse,
@@ -10,7 +14,7 @@ import {
   requireSession,
 } from "./auth";
 
-const BASE = backendOrigin() + "/api/v1/workspaces";
+const BASE = "/api/v1/workspaces";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -73,8 +77,8 @@ export async function workspaceGateway(
     );
   }
 
-  const gateway = process.env.AEGIS_GATEWAY_TOKEN;
   const session = readSession(request);
+  const gateway = sessionGateway(session);
 
   if (!session || !gateway || gateway.length < 64) {
     return authResponse(
@@ -85,7 +89,7 @@ export async function workspaceGateway(
 
   const headers = new Headers({
     "x-aegis-gateway-token": gateway,
-    Authorization: `Bearer ${session}`,
+    Authorization: `Bearer ${sessionBearer(session)}`,
   });
 
   let body: string | undefined;
@@ -163,7 +167,7 @@ export async function workspaceGateway(
 
   try {
     const response = await fetch(
-      BASE + "/" + workspace + (id ? "/" + id : "") + query,
+      sessionBackend(session) + BASE + "/" + workspace + (id ? "/" + id : "") + query,
       {
         method,
         headers,
