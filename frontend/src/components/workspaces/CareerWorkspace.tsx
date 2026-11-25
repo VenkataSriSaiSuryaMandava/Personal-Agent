@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 
 import FunctionalWorkspace from "./FunctionalWorkspace";
+import DiscoverPanel, { GuestDiscovery } from "./DiscoverPanel";
+import { Search } from "lucide-react";
 
 import {
   getProfile,
@@ -37,7 +39,8 @@ import {
 
 import "./CareerWorkspace.css";
 
-type Section = "applications" | "profile" | "documents";
+type Section =
+  "discover" | "applications" | "profile" | "documents";
 
 type StringField = {
   [K in keyof CareerProfile]:
@@ -901,6 +904,16 @@ export default function CareerWorkspace({
   const [section, setSection] =
     useState<Section>("applications");
 
+  const [applicationVersion, setApplicationVersion] = useState(0);
+  const [visited, setVisited] = useState<Section[]>(["applications"]);
+
+  function openSection(key: Section) {
+    setVisited(previous =>
+      previous.includes(key) ? previous : [...previous, key],
+    );
+    setSection(key);
+  }
+
   return (
     <div className="career-workspace">
       <header className="career-header">
@@ -913,7 +926,7 @@ export default function CareerWorkspace({
             <h1>Career workspace</h1>
           </div>
           <p className="muted">
-            Manage your applications, qualifications and resumes.
+            Discover opportunities and manage your applications and career.
           </p>
         </div>
         <span className="career-privacy">
@@ -923,6 +936,7 @@ export default function CareerWorkspace({
       </header>
       <nav className="career-tabs" aria-label="Career sections">
         {([
+          ["discover", "Discover", Search],
           ["applications", "Applications", BriefcaseBusiness],
           ["profile", "My Profile", UserRound],
           ["documents", "Documents", Files],
@@ -932,7 +946,7 @@ export default function CareerWorkspace({
             type="button"
             className="secondary-button"
             aria-pressed={section === key}
-            onClick={() => setSection(key)}
+            onClick={() => openSection(key)}
           >
             <Icon size={16}/>
             {label}
@@ -940,36 +954,51 @@ export default function CareerWorkspace({
         ))}
       </nav>
 
+      {visited.includes("discover") && (
+        <div hidden={section !== "discover"}>
+          {guest ? <GuestDiscovery/> : (
+            <DiscoverPanel
+              onSaved={() => setApplicationVersion(value => value + 1)}
+            />
+          )}
+        </div>
+      )}
+
       <div
         className="career-applications"
         hidden={section !== "applications"}
       >
         <FunctionalWorkspace
+          refreshVersion={applicationVersion}
           workspace="jobs"
           guest={guest}
           onAssistant={onAssistant}
         />
       </div>
 
-      {section === "profile" && (
-        guest ? (
+      {visited.includes("profile") && (
+        <div hidden={section !== "profile"}>
+        {guest ? (
           <GuestPreview>
             <strong>Alex Example — Software Developer</strong>
             <p>Sample skills: Python, SQL, TypeScript.</p>
             <p>Sample preference: Full-time, hybrid.</p>
           </GuestPreview>
-        ) : <ProfilePanel/>
+        ) : <ProfilePanel/>}
+        </div>
       )}
 
-      {section === "documents" && (
-        guest ? (
+      {visited.includes("documents") && (
+        <div hidden={section !== "documents"}>
+        {guest ? (
           <GuestPreview>
             <strong>Sample technical resume</strong>
             <p className="muted">
               Fictional preview only. No files are uploaded or stored.
             </p>
           </GuestPreview>
-        ) : <DocumentsPanel/>
+        ) : <DocumentsPanel/>}
+        </div>
       )}
     </div>
   );

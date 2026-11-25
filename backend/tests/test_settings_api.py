@@ -535,7 +535,7 @@ def test_storage_status(settings_client):
 
     data = response.json()
 
-    assert data["schema_version"] == 7
+    assert data["schema_version"] == 8
     assert data["integrity"] == "ok"
     assert data["local_only"] is True
     assert data["encrypted_by_application"] is False

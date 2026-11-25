@@ -385,6 +385,9 @@ def test_v5_to_v6_preserves_records(
 
     # Reconstruct schema v5 in an isolated test database.
     with connect(path) as connection:
+        connection.execute("DROP TABLE job_application_links")
+        connection.execute("DROP TABLE job_listings")
+        connection.execute("DROP TABLE job_sources")
         connection.execute("DROP TABLE career_audit_events")
         connection.execute("DROP TABLE resume_versions")
         connection.execute("DROP TABLE career_profiles")
@@ -420,7 +423,7 @@ def test_v5_to_v6_preserves_records(
     with connect(path) as connection:
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 7
+        ).fetchone()[0] == 8
 
         assert connection.execute(
             "PRAGMA integrity_check"

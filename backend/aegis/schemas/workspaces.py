@@ -128,14 +128,14 @@ def validate_record(
 
         if any(
             unicodedata.category(character) == "Cc"
-            and character not in "\\n\\r\\t"
+            and character not in "\n\r\t"
             for character in text
         ):
             raise ValueError("Invalid text character")
 
     if any(
         character in record.title
-        for character in ("\\n", "\\r", "\\t")
+        for character in ("\n", "\r", "\t")
     ):
         raise ValueError("Title must be single-line")
 

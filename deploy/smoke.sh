@@ -82,4 +82,14 @@ test "$(status PATCH '/api/agent/career/profile')" = 403
 test "$(status POST '/api/agent/career/resumes')" = 403
 test "$(status POST '/api/agent/career/resume')" = 403
 
-echo 'Public career isolation passed.'
+for path in sources jobs job
+do
+  test "$(status GET "/api/agent/career/$path")" = 403
+done
+
+for path in sources source job
+do
+  test "$(status POST "/api/agent/career/$path")" = 403
+done
+
+echo 'Public career and discovery isolation passed.'
