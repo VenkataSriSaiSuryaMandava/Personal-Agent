@@ -10,7 +10,7 @@ from aegis.storage.database import (
 from aegis.storage.settings import ApplicationSettings
 
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 def initialize_database(
@@ -349,3 +349,100 @@ def initialize_database(
             """)
 
             connection.execute("PRAGMA user_version = 6")
+
+            version = 6
+
+        if version == 6:
+
+            connection.execute("""
+                CREATE TABLE career_profiles (
+                    user_id INTEGER PRIMARY KEY,
+                    payload TEXT NOT NULL,
+                    revision INTEGER NOT NULL DEFAULT 1
+                        CHECK (
+                            revision BETWEEN 1
+                            AND 9007199254740991
+                        ),
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            connection.execute("""
+                CREATE TABLE resume_versions (
+                    id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    title TEXT NOT NULL
+                        CHECK (length(title) BETWEEN 1 AND 160),
+                    media_type TEXT NOT NULL CHECK (
+                        media_type IN (
+                            'application/pdf',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            'text/plain'
+                        )
+                    ),
+                    document BLOB NOT NULL,
+                    size_bytes INTEGER NOT NULL CHECK (
+                        size_bytes BETWEEN 1 AND 10485760
+                        AND size_bytes = length(document)
+                    ),
+                    sha256 TEXT NOT NULL
+                        CHECK (length(sha256) = 64),
+                    extracted_text TEXT NOT NULL
+                        CHECK (length(extracted_text) <= 100000),
+                    is_active INTEGER NOT NULL DEFAULT 0
+                        CHECK (is_active IN (0, 1)),
+                    revision INTEGER NOT NULL DEFAULT 1
+                        CHECK (
+                            revision BETWEEN 1
+                            AND 9007199254740991
+                        ),
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_resume_owner_created
+                ON resume_versions(user_id, created_at DESC)
+            """)
+
+            connection.execute("""
+                CREATE UNIQUE INDEX idx_resume_active
+                ON resume_versions(user_id)
+                WHERE is_active = 1
+            """)
+
+            connection.execute("""
+                CREATE TABLE career_audit_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    entity_type TEXT NOT NULL CHECK (
+                        entity_type IN ('profile', 'resume')
+                    ),
+                    entity_id TEXT NOT NULL,
+                    event_type TEXT NOT NULL CHECK (
+                        event_type IN (
+                            'created', 'updated',
+                            'deleted', 'activated'
+                        )
+                    ),
+                    created_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_career_audit_owner
+                ON career_audit_events(user_id, id DESC)
+            """)
+
+            connection.execute("PRAGMA user_version = 7")
