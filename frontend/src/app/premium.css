@@ -707,3 +707,374 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Reusable controls */
+
+.aegis-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 550;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.aegis-button-primary {
+  color: white;
+  background: var(--primary);
+  border-color: transparent;
+}
+
+.aegis-button-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.aegis-button-secondary:hover:not(:disabled),
+.aegis-button-icon:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+.aegis-button-icon {
+  width: 37px;
+  height: 37px;
+  min-height: 37px;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+/* Command palette */
+
+.aegis-command-trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.aegis-command-trigger:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.aegis-command-trigger kbd {
+  border: 1px solid var(--border);
+  padding: 3px 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.aegis-command-dialog {
+  position: fixed;
+  top: min(15vh, 140px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(85dvh - 20px);
+  overflow: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 24px 90px #0005;
+}
+
+.aegis-command-dialog::backdrop {
+  background: #070a145c;
+  backdrop-filter: blur(4px);
+}
+
+.aegis-command-search {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.aegis-command-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.aegis-command-search input:focus-visible {
+  outline-offset: 0;
+}
+
+.aegis-command-caption {
+  padding: 14px 20px 7px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+
+.aegis-command-results {
+  padding: 0 10px 10px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.aegis-command-result {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 41px;
+  padding: 10px 13px;
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.aegis-command-result span {
+  flex: 1;
+}
+
+.aegis-command-result svg {
+  color: var(--muted);
+}
+
+.aegis-command-result[aria-selected="true"] {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+.aegis-command-result[aria-selected="true"] svg {
+  color: var(--accent);
+}
+
+.aegis-command-empty {
+  padding: 30px 15px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.aegis-command-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 13px 20px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+
+/* Accessible notifications */
+
+.aegis-notification {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--success);
+  border-radius: 13px;
+  box-shadow: 0 15px 50px #0003;
+  animation: aegis-notification-enter .2s ease-out;
+}
+
+.aegis-notification[data-tone="error"] {
+  border-left-color: #ef4444;
+}
+
+.aegis-notification > svg {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.aegis-notification[data-tone="error"] > svg {
+  color: #ef4444;
+}
+
+.aegis-notification > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.aegis-notification strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.aegis-notification p {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+@keyframes aegis-notification-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Shared loading skeletons */
+
+.aegis-skeleton-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.aegis-skeleton-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.aegis-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.aegis-skeleton-line {
+  height: 13px;
+  border-radius: 6px;
+  background: var(--hover);
+  animation: aegis-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.aegis-skeleton-line + .aegis-skeleton-line {
+  margin-top: 13px;
+}
+
+.aegis-skeleton-title {
+  height: 28px;
+  width: min(340px, 80%);
+}
+
+.aegis-skeleton-short {
+  width: 55%;
+}
+
+.aegis-skeleton-content {
+  min-height: 180px;
+}
+
+@keyframes aegis-skeleton-pulse {
+  0%, 100% { opacity: .5; }
+  50% { opacity: 1; }
+}
+
+/* Dedicated workspace refinements */
+
+.app-shell[data-workspace="tasks"] .fw-records {
+  gap: 12px;
+}
+
+.app-shell[data-workspace="tasks"] .fw-record {
+  border-radius: 10px;
+}
+
+.app-shell[data-workspace="calendar"] .wx-day {
+  min-width: 0;
+}
+
+.app-shell[data-workspace="email"] .wx-email-list {
+  background: var(--sidebar);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.app-shell[data-workspace="research"] .fw-notes,
+.app-shell[data-workspace="memory"] .fw-notes {
+  line-height: 1.8;
+}
+
+.app-shell[data-workspace="coding"] .fw-notes {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 13px;
+}
+
+.app-shell[data-workspace="browser"] .fw-reference {
+  overflow-wrap: anywhere;
+}
+
+.app-shell[data-workspace="approvals"] .wx-decision-layout {
+  gap: 18px;
+}
+
+.app-shell[data-workspace="jobs"] .career-panel {
+  min-width: 0;
+}
+
+.app-shell[data-workspace="settings"] .as-content {
+  min-width: 0;
+}
+
+/* Responsive and reduced-motion support */
+
+@media (max-width: 1100px) {
+  .aegis-command-trigger kbd {
+    display: none;
+  }
+
+  .aegis-skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .aegis-command-trigger span {
+    display: none;
+  }
+
+  .aegis-command-trigger {
+    width: 36px;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .aegis-notification {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .aegis-skeleton-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aegis-notification,
+  .aegis-skeleton-line {
+    animation: none;
+  }
+}
