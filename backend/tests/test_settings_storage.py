@@ -38,7 +38,7 @@ def test_schema_version(settings_database):
 
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 7
+        ).fetchone()[0] == 8
 
 
 def test_default_settings(settings_database):
@@ -291,6 +291,9 @@ def test_migration_from_version_two_preserves_owner(
 
     with connect(settings_database) as connection:
 
+        connection.execute("DROP TABLE job_application_links")
+        connection.execute("DROP TABLE job_listings")
+        connection.execute("DROP TABLE job_sources")
         connection.execute("DROP TABLE career_audit_events")
         connection.execute("DROP TABLE resume_versions")
         connection.execute("DROP TABLE career_profiles")

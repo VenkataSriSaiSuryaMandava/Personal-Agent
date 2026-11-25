@@ -79,10 +79,12 @@ export default function FunctionalWorkspace({
   workspace,
   guest,
   onAssistant,
+  refreshVersion = 0,
 }: {
   workspace: RecordWorkspace;
   guest: boolean;
   onAssistant: () => void;
+  refreshVersion?: number;
 }) {
   const config = WORKSPACE_CONFIG[workspace];
   const experience = EXPERIENCE[workspace];
@@ -128,6 +130,46 @@ export default function FunctionalWorkspace({
 
   const mounted = useRef(false);
   const operation = useRef(false);
+  const loadedVersion = useRef(0);
+
+  useEffect(() => {
+    if (
+      guest ||
+      busy ||
+      operation.current ||
+      loadedVersion.current === refreshVersion
+    ) return;
+
+    let active = true;
+    const version = refreshVersion;
+
+    operation.current = true;
+
+    listRecords(workspace, 0)
+      .then(result => {
+        if (!active || !mounted.current) return;
+
+        setRecords(result.records);
+        setNextOffset(result.next_offset);
+        setMetricsRevision(value => value + 1);
+      })
+      .catch(() => {
+        if (active && mounted.current) {
+          setError("Application saved. Use Refresh to reload records.");
+        }
+      })
+      .finally(() => {
+        if (active) {
+          loadedVersion.current = version;
+          operation.current = false;
+        }
+      });
+
+    return () => {
+      active = false;
+      operation.current = false;
+    };
+  }, [refreshVersion, workspace, guest, busy]);
 
   useEffect(() => {
     let active = true;

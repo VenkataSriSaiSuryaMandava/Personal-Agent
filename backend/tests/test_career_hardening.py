@@ -235,6 +235,9 @@ def test_migration_failure_rolls_back(
     _, _, _, path, _ = authenticated_environment
 
     with connect(path) as c:
+        c.execute("DROP TABLE job_application_links")
+        c.execute("DROP TABLE job_listings")
+        c.execute("DROP TABLE job_sources")
         c.execute("DROP TABLE career_audit_events")
         c.execute("DROP TABLE career_profiles")
 

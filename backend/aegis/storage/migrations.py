@@ -10,7 +10,7 @@ from aegis.storage.database import (
 from aegis.storage.settings import ApplicationSettings
 
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 def initialize_database(
@@ -446,3 +446,162 @@ def initialize_database(
             """)
 
             connection.execute("PRAGMA user_version = 7")
+
+            version = 7
+
+        if version == 7:
+
+            connection.execute("""
+                CREATE TABLE job_sources (
+                    id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    provider TEXT NOT NULL CHECK (
+                        provider IN (
+                            'greenhouse', 'lever', 'ashby'
+                        )
+                    ),
+                    board TEXT NOT NULL CHECK (
+                        length(board) BETWEEN 1 AND 100
+                    ),
+                    company TEXT NOT NULL CHECK (
+                        length(company) BETWEEN 1 AND 160
+                    ),
+                    enabled INTEGER NOT NULL DEFAULT 1
+                        CHECK (enabled IN (0, 1)),
+                    revision INTEGER NOT NULL DEFAULT 1
+                        CHECK (
+                            revision BETWEEN 1
+                            AND 9007199254740991
+                        ),
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    last_attempt_at INTEGER,
+                    last_success_at INTEGER,
+                    last_result TEXT NOT NULL DEFAULT 'never'
+                        CHECK (
+                            last_result IN (
+                                'never', 'success',
+                                'failed', 'limited'
+                            )
+                        ),
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE,
+                    UNIQUE(user_id, provider, board),
+                    UNIQUE(user_id, id)
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_job_sources_owner
+                ON job_sources(user_id, enabled)
+            """)
+
+            connection.execute("""
+                CREATE TABLE job_listings (
+                    id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    source_id TEXT NOT NULL,
+                    external_id TEXT NOT NULL CHECK (
+                        length(external_id) BETWEEN 1 AND 200
+                    ),
+                    title TEXT NOT NULL CHECK (
+                        length(title) BETWEEN 1 AND 160
+                    ),
+                    location TEXT NOT NULL DEFAULT ''
+                        CHECK (length(location) <= 500),
+                    department TEXT NOT NULL DEFAULT ''
+                        CHECK (length(department) <= 300),
+                    description TEXT NOT NULL DEFAULT ''
+                        CHECK (length(description) <= 30000),
+                    employment_type TEXT NOT NULL DEFAULT ''
+                        CHECK (length(employment_type) <= 100),
+                    work_mode TEXT NOT NULL DEFAULT 'unknown'
+                        CHECK (
+                            work_mode IN (
+                                'unknown', 'remote',
+                                'hybrid', 'onsite'
+                            )
+                        ),
+                    posting_url TEXT NOT NULL CHECK (
+                        length(posting_url) BETWEEN 1 AND 2000
+                    ),
+                    apply_url TEXT NOT NULL DEFAULT ''
+                        CHECK (length(apply_url) <= 2000),
+                    published_at INTEGER,
+                    first_seen_at INTEGER NOT NULL,
+                    last_seen_at INTEGER NOT NULL,
+                    is_open INTEGER NOT NULL DEFAULT 1
+                        CHECK (is_open IN (0, 1)),
+                    FOREIGN KEY (user_id, source_id)
+                        REFERENCES job_sources(user_id, id)
+                        ON DELETE CASCADE,
+                    UNIQUE(user_id, source_id, external_id)
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_job_listings_owner_seen
+                ON job_listings(
+                    user_id, is_open, last_seen_at DESC
+                )
+            """)
+
+            connection.execute("""
+                CREATE TABLE job_application_links (
+                    user_id INTEGER NOT NULL,
+                    application_id TEXT PRIMARY KEY,
+                    provider TEXT NOT NULL CHECK (
+                        provider IN (
+                            'greenhouse', 'lever', 'ashby'
+                        )
+                    ),
+                    board TEXT NOT NULL,
+                    external_id TEXT NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE,
+                    FOREIGN KEY (application_id)
+                        REFERENCES workspace_records(id)
+                        ON DELETE CASCADE,
+                    UNIQUE(
+                        user_id, provider,
+                        board, external_id
+                    )
+                )
+            """)
+
+            connection.execute("""
+                CREATE TRIGGER job_application_owner_check
+                BEFORE INSERT ON job_application_links
+                BEGIN
+                    SELECT RAISE(
+                        ABORT, 'Invalid job application'
+                    )
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM workspace_records
+                        WHERE id = NEW.application_id
+                        AND user_id = NEW.user_id
+                        AND workspace = 'jobs'
+                    );
+                END
+            """)
+
+            connection.execute("""
+                CREATE TRIGGER job_application_update_check
+                BEFORE UPDATE ON job_application_links
+                BEGIN
+                    SELECT RAISE(
+                        ABORT, 'Invalid job application'
+                    )
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM workspace_records
+                        WHERE id = NEW.application_id
+                        AND user_id = NEW.user_id
+                        AND workspace = 'jobs'
+                    );
+                END
+            """)
+
+            connection.execute("PRAGMA user_version = 8")

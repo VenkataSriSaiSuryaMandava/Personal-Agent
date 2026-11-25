@@ -22,7 +22,7 @@ def test_career_schema(authenticated_environment):
     with connect(path) as c:
         assert c.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 7
+        ).fetchone()[0] == 8
 
         tables = {
             row[0]
@@ -44,6 +44,13 @@ def test_v6_migration_preserves_existing_data(
     _, _, _, path, _ = authenticated_environment
 
     with connect(path) as c:
+        for table in (
+            "job_application_links",
+            "job_listings",
+            "job_sources",
+        ):
+            c.execute("DROP TABLE " + table)
+
         for table in CAREER_TABLES:
             c.execute("DROP TABLE " + table)
 
@@ -67,7 +74,7 @@ def test_v6_migration_preserves_existing_data(
     with connect(path) as c:
         assert c.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 7
+        ).fetchone()[0] == 8
 
         assert [
             tuple(row)
