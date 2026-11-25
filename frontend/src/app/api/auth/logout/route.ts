@@ -5,6 +5,7 @@ import {
   authResponse,
   clearSession,
   readSession,
+  validSessionBinding,
   rejectAuthRequest,
 } from "@/lib/server/auth";
 
@@ -14,6 +15,12 @@ export async function POST(request: NextRequest) {
   if (rejected) return rejected;
 
   const token = readSession(request);
+
+  if (token && !validSessionBinding(request, token)) {
+    return authResponse(
+      { detail: "Workspace session changed" }, 401
+    );
+  }
 
   if (token) {
     const response = await authBackend(

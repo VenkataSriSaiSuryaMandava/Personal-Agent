@@ -9,6 +9,7 @@ import {
   authBackend,
   authResponse,
   readSession,
+  inspectSession,
   rejectAuthRequest,
   setSession,
 } from "@/lib/server/auth";
@@ -55,13 +56,26 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const existing = readSession(request);
+  let existing = readSession(request);
 
   if (existing && !publicRuntime() && !guestSession(existing)) {
-    return authResponse(
-      { detail: "Sign out before switching access mode" },
-      409
-    );
+    const status = await inspectSession(existing);
+
+    if (status === "valid") {
+      return authResponse(
+        { detail: "Sign out before switching access mode" },
+        409
+      );
+    }
+
+    if (status !== "expired") {
+      return authResponse(
+        { detail: "Session temporarily unavailable" },
+        status === "limited" ? 429 : 503
+      );
+    }
+
+    existing = null;
   }
 
   // The isolated backend validates the query and session

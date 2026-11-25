@@ -1,5 +1,8 @@
 "use client";
 
+import { workspaceFetch } from "@/lib/session-client";
+
+
 import { useState, useEffect, useRef } from "react";
 import {
   Sparkles,
@@ -99,7 +102,7 @@ export default function AIInference() {
 
     try {
       if (current) {
-        const response = await fetch(
+        const response = await workspaceFetch(
           "/api/agent/inference",
           {
             method: "POST",

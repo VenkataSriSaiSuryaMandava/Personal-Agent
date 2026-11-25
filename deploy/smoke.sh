@@ -208,6 +208,34 @@ COOKIEPY
 session_a="$(cookie_for a)"
 session_b="$(cookie_for b)"
 
+binding_for() {
+  python3 - "$work/$1.headers" <<'BINDINGPY'
+import re
+import sys
+from pathlib import Path
+
+headers = Path(sys.argv[1]).read_text()
+
+matches = re.findall(
+    r"^x-aegis-session-binding:\s*([a-f0-9]{64})\s*$",
+    headers,
+    re.IGNORECASE | re.MULTILINE,
+)
+
+assert len(matches) == 1
+print(matches[0])
+BINDINGPY
+}
+
+binding_a="$(binding_for a)"
+binding_b="$(binding_for b)"
+
+test -n "$binding_a"
+test -n "$binding_b"
+test "$binding_a" != "$binding_b"
+
+echo "PASS: Independent session verification bindings"
+
 test -n "$session_a"
 test -n "$session_b"
 test "$session_a" != "$session_b"
@@ -216,8 +244,15 @@ echo "PASS: Independent HTTPS-only session cookies"
 
 echo "===== AUTHENTICATED REAL WORKSPACES ====="
 
-for session in "$session_a" "$session_b"
+for visitor in a b
 do
+  if [ "$visitor" = a ]; then
+    session="$session_a"
+    binding="$binding_a"
+  else
+    session="$session_b"
+    binding="$binding_b"
+  fi
   for path in \
     auth/session \
     agent/settings \
@@ -232,6 +267,7 @@ do
   do
     test "$(status \
       -H "Cookie: $session" \
+      -H "x-aegis-session-binding: $binding" \
       "$base/api/$path")" = 200
   done
 
@@ -240,6 +276,7 @@ do
   do
     test "$(status \
       -H "Cookie: $session" \
+      -H "x-aegis-session-binding: $binding" \
       "$base/api/agent/workspaces/$workspace")" = 200
   done
 done
@@ -253,18 +290,21 @@ task_url="$base/api/agent/workspaces/tasks"
 test "$(status -X POST \
   -H "Origin: $origin" \
   -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
   -H 'Content-Type: application/json' \
   --data '{"title":"Synthetic isolation test","status":"todo"}' \
   "$task_url")" = 200
 
 test "$(status \
   -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
   "$task_url")" = 200
 
 grep -F 'Synthetic isolation test' "$work/body" >/dev/null
 
 test "$(status \
   -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
   "$task_url")" = 200
 
 if grep -F 'Synthetic isolation test' "$work/body" >/dev/null
@@ -275,6 +315,72 @@ fi
 
 echo "PASS: Visitor records are isolated"
 
+echo "===== SESSION BINDING SECURITY ====="
+
+test "$(status \
+  -H "Cookie: $session_a" \
+  "$task_url")" = 401
+
+test "$(status \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$task_url")" = 401
+
+test "$(status \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$task_url")" = 401
+
+echo "PASS: Missing and mismatched bindings denied"
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_a" \
+  -H 'Content-Type: application/json' \
+  --data '{"title":"Rejected stale-tab mutation","status":"todo"}' \
+  "$task_url")" = 401
+
+test "$(status \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$task_url")" = 200
+
+if grep -F 'Rejected stale-tab mutation' "$work/body" >/dev/null
+then
+  echo "Stale session mutation detected" >&2
+  exit 1
+fi
+
+echo "PASS: Stale session cannot modify another workspace"
+
+test "$(status -X POST \
+  -H "Origin: $origin" \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_a" \
+  "$base/api/auth/logout")" = 401
+
+test "$(status \
+  -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
+  "$task_url")" = 200
+
+echo "PASS: Stale session cannot revoke another session"
+
+test "$(status -X POST \
+  -H "Origin: https://example.invalid" \
+  -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
+  -H 'Content-Type: application/json' \
+  --data '{}' \
+  "$task_url")" = 403
+
+test "$(status -X POST \
+  "$task_url")" = 403
+
+echo "PASS: Origin protection remains mandatory"
+
+
 echo "===== PUBLIC AI RESTRICTION ====="
 
 for endpoint in chat inference conversation
@@ -284,6 +390,7 @@ do
     code="$(status -X POST \
       -H "Origin: $origin" \
       -H "Cookie: $session_a" \
+      -H "x-aegis-session-binding: $binding_a" \
       -H 'Content-Type: application/json' \
       --data "$payload" \
       "$base/api/agent/$endpoint")"
@@ -307,6 +414,7 @@ echo "PASS: Public AI endpoints denied"
 
 test "$(status \
   -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
   "$base/api/agent/settings")" = 200
 
 python3 - "$work/body" <<'PY'
@@ -327,6 +435,7 @@ echo "===== PUBLIC DATABASE METADATA ====="
 
 test "$(status \
   -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
   "$base/api/agent/settings/storage")" = 200
 
 python3 - "$work/body" <<'PY'
@@ -348,19 +457,23 @@ echo "===== SESSION REVOCATION ====="
 test "$(status -X POST \
   -H "Origin: $origin" \
   -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
   "$base/api/auth/logout")" = 200
 
 test "$(status \
   -H "Cookie: $session_a" \
+  -H "x-aegis-session-binding: $binding_a" \
   "$task_url")" = 401
 
 test "$(status \
   -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
   "$task_url")" = 200
 
 test "$(status -X POST \
   -H "Origin: $origin" \
   -H "Cookie: $session_b" \
+  -H "x-aegis-session-binding: $binding_b" \
   "$base/api/auth/logout")" = 200
 
 echo "PASS: Logout revokes only the selected session"

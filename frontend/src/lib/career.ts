@@ -1,3 +1,4 @@
+import { workspaceFetch } from "@/lib/session-client";
 export type CareerProfile = {
   full_name: string;
   email: string;
@@ -148,7 +149,7 @@ async function request(operation: Operation) {
     throw new Error("Invalid career endpoint.");
   }
 
-  const response = await fetch(url, {
+  const response = await workspaceFetch(url, {
     method,
     body,
     headers: body === undefined

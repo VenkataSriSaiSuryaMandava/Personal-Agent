@@ -1,5 +1,8 @@
 "use client";
 
+import { workspaceFetch } from "@/lib/session-client";
+
+
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Copy, Check, LoaderCircle, Plus, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -386,7 +389,7 @@ export default function Conversation({
     controller.current = abort;
     const timeout = window.setTimeout(() => abort.abort(), 45000);
     try {
-      const response = await fetch("/api/agent/conversation", {
+      const response = await workspaceFetch("/api/agent/conversation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",

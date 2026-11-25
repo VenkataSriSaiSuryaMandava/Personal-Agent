@@ -7,6 +7,7 @@ import {
   rejectAuthRequest,
   setSession,
   readSession,
+  inspectSession,
 } from "@/lib/server/auth";
 
 export async function POST(request: NextRequest) {
@@ -21,11 +22,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (readSession(request)?.startsWith("guest.")) {
-    return authResponse(
-      { detail: "End guest session before Owner login" },
-      409
-    );
+  const existing = readSession(request);
+
+  if (existing) {
+    const status = await inspectSession(existing);
+
+    if (status === "valid") {
+      return authResponse(
+        { detail: "Sign out before starting another session" },
+        409
+      );
+    }
+
+    if (status !== "expired") {
+      return authResponse(
+        { detail: "Session temporarily unavailable" },
+        status === "limited" ? 429 : 503
+      );
+    }
   }
 
   const type = request.headers

@@ -1,3 +1,4 @@
+import { workspaceFetch } from "@/lib/session-client";
 import type { JobIntelligenceResult } from "./matching";
 
 export type Freshness = "all" | "fresh" | "stale";
@@ -133,7 +134,7 @@ async function request<T>(
     throw new Error("Invalid discovery endpoint.");
   }
 
-  const response = await fetch(url, {
+  const response = await workspaceFetch(url, {
     method,
     body: payload
       ? JSON.stringify(payload)

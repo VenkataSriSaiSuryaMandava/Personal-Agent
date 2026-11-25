@@ -1,3 +1,4 @@
+import { workspaceFetch } from "@/lib/session-client";
 export type ConversationSummary = {
   id: string;
   title: string;
@@ -46,7 +47,7 @@ async function request<T>(
   suffix = "",
   init: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(
+  const response = await workspaceFetch(
     BASE + suffix,
     {
       ...init,

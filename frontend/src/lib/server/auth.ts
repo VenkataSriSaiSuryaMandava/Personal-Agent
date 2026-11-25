@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   guestAvailable,
   guestSession,
@@ -46,6 +47,57 @@ export function readSession(request: NextRequest) {
   return token;
 }
 
+export function sessionBinding(token: string): string {
+  const gateway = sessionGateway(token);
+
+  if (!gateway || gateway.length < 64) {
+    throw new Error("Session verification unavailable");
+  }
+
+  return createHmac("sha256", gateway)
+    .update("aegis-workspace-session-v1:")
+    .update(token)
+    .digest("hex");
+}
+
+export function validSessionBinding(
+  request: NextRequest,
+  token: string
+): boolean {
+  const supplied = request.headers.get("x-aegis-session-binding");
+
+  if (!supplied || !/^[a-f0-9]{64}$/.test(supplied)) {
+    return false;
+  }
+
+  try {
+    return timingSafeEqual(
+      Buffer.from(supplied, "hex"),
+      Buffer.from(sessionBinding(token), "hex")
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function inspectSession(token: string) {
+  const response = await authBackend(
+    "session",
+    { method: "GET" },
+    token
+  );
+
+  if (response.status === 401) return "expired" as const;
+  if (response.status === 429) return "limited" as const;
+  if (!response.ok) return "unavailable" as const;
+
+  const body = await response.json().catch(() => null);
+
+  return body?.authenticated === true
+    ? "valid" as const
+    : "unavailable" as const;
+}
+
 function cookieOptions(request: NextRequest) {
   return {
     httpOnly: true,
@@ -62,6 +114,11 @@ export function setSession(
   response: NextResponse,
   token: string
 ) {
+  response.headers.set(
+    "x-aegis-session-binding",
+    sessionBinding(token)
+  );
+
   response.cookies.set(SESSION_COOKIE, token, {
     ...cookieOptions(request),
     maxAge: SESSION_DURATION,

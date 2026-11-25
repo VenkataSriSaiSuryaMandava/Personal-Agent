@@ -1,3 +1,4 @@
+import { rejectWorkspaceSession } from "@/lib/server/workspace-session";
 import { guestSession } from "@/lib/server/backend-origin";
 import type { NextRequest } from "next/server";
 import { requireSession, readSession } from "@/lib/server/auth";
@@ -30,6 +31,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+
+
+  const sessionRejected =
+    rejectWorkspaceSession(request);
+
+  if (sessionRejected) return sessionRejected;
 
   const unauthorized = await requireSession(request);
   if (unauthorized) return unauthorized;

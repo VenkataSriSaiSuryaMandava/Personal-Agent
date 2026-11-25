@@ -1,3 +1,4 @@
+import { rejectWorkspaceSession } from "@/lib/server/workspace-session";
 import type { NextRequest } from "next/server";
 import { requireSession, readSession } from "@/lib/server/auth";
 import {
@@ -6,6 +7,11 @@ import {
 } from "@/lib/server/backend";
 
 export async function GET(request: NextRequest) {
+  const sessionRejected =
+    rejectWorkspaceSession(request);
+
+  if (sessionRejected) return sessionRejected;
+
   const rejected = rejectRequest(request);
 
   if (rejected) return rejected;

@@ -18,6 +18,12 @@ import {
 
 
 import "./auth-screen.css";
+import {
+  acceptSession,
+  clearWorkspaceSession,
+  notifySessionChange,
+  workspaceFetch,
+} from "@/lib/session-client";
 
 import { writeWorkspaceLocation } from "@/lib/workspace-location";
 
@@ -66,6 +72,7 @@ export default function AuthGate({
 
         setState(
           response.ok && body.authenticated === true &&
+            acceptSession(response) &&
             (body.role === "guest" ||
               (!publicMode && body.role === "owner"))
             ? "authenticated"
@@ -81,14 +88,25 @@ export default function AuthGate({
     void check();
 
     function expired() {
+      clearWorkspaceSession();
       rememberActiveConversation(null);
       setState("locked");
     }
 
+    function changed(event: StorageEvent) {
+      if (event.key === "aegis-session-change") {
+        active = false;
+        expired();
+        window.location.reload();
+      }
+    }
+
+    window.addEventListener("storage", changed);
     window.addEventListener("aegis-session-expired", expired);
 
     return () => {
       active = false;
+      window.removeEventListener("storage", changed);
 
       window.removeEventListener(
         "aegis-session-expired",
@@ -121,7 +139,13 @@ export default function AuthGate({
 
       const result = await response.json();
 
-      if (response.ok && result.authenticated === true) {
+      if (
+        response.ok &&
+        result.authenticated === true &&
+        result.role === "owner" &&
+        acceptSession(response)
+      ) {
+        notifySessionChange();
           rememberActiveConversation(null);
         writeWorkspaceLocation("overview", "general", true);
         setState("authenticated");
@@ -163,8 +187,10 @@ export default function AuthGate({
       if (
         response.ok &&
         result.authenticated === true &&
-        result.role === "guest"
+        result.role === "guest" &&
+        acceptSession(response)
       ) {
+        notifySessionChange();
         setGuest(true);
         rememberActiveConversation(null);
         writeWorkspaceLocation("overview", "general", true);
@@ -190,7 +216,7 @@ export default function AuthGate({
     setError("");
 
     try {
-      const response = await fetch("/api/auth/logout", {
+      const response = await workspaceFetch("/api/auth/logout", {
         method: "POST",
         cache: "no-store",
         signal: AbortSignal.timeout(12000),
@@ -200,6 +226,8 @@ export default function AuthGate({
         throw new Error("Logout failed");
       }
 
+      clearWorkspaceSession();
+      notifySessionChange();
       rememberActiveConversation(null);
       setState("locked");
     } catch {
