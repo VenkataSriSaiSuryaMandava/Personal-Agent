@@ -10,7 +10,7 @@ import {
   requireSession,
 } from "./auth";
 
-type Endpoint = "sources" | "source" | "jobs" | "job";
+type Endpoint = "sources" | "source" | "jobs" | "job" | "match";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -23,6 +23,7 @@ const METHODS: Record<Endpoint, string[]> = {
   source: ["POST"],
   jobs: ["GET"],
   job: ["GET", "POST"],
+  match: ["GET"],
 };
 
 function endpointPath(endpoint: Endpoint) {
@@ -35,6 +36,8 @@ function endpointPath(endpoint: Endpoint) {
       return "/api/v1/career/jobs";
     case "job":
       return "/api/v1/career/job";
+    case "match":
+      return "/api/v1/career/match";
   }
 }
 
@@ -103,7 +106,7 @@ function validatedQuery(
 
   if (
     request.method === "GET" &&
-    endpoint === "job"
+    (endpoint === "job" || endpoint === "match")
   ) {
     if (
       entries.length !== 1 ||
@@ -316,7 +319,7 @@ export async function discoveryGateway(
         413: "Request too large",
         415: "Unsupported content type",
         422: "Invalid discovery request",
-        429: "Job refresh busy",
+        429: "Discovery operation busy",
         503: "Discovery unavailable",
       };
 
