@@ -1,0 +1,124 @@
+.ji-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.ji-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ji-panel p {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
+.ji-panel h4 {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.ji-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.ji-metric {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.ji-metric span {
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.ji-metric strong {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.ji-group {
+  display: grid;
+  gap: 8px;
+}
+
+.ji-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.ji-row > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.ji-details {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.ji-details summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.ji-details[open] > summary {
+  margin-bottom: 10px;
+}
+
+.ji-evidence {
+  padding: 4px 0;
+}
+
+.ji-evidence p {
+  font-size: 12px;
+}
+
+.ji-warning {
+  padding: 10px;
+  margin: 6px 0;
+  border: 1px solid var(--border);
+  border-left: 3px solid #b88935;
+  border-radius: 6px;
+}
+
+.ji-panel ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.ji-panel li {
+  margin: 5px 0;
+}
+
+@media (max-width: 600px) {
+  .ji-panel {
+    padding: 10px;
+  }
+
+  .ji-metrics {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+}

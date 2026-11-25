@@ -3,6 +3,8 @@
 import sqlite3
 import unicodedata
 
+from threading import BoundedSemaphore
+
 from fastapi import APIRouter, Depends, Request
 from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
@@ -35,6 +37,7 @@ from aegis.services.job_refresh import (
     DiscoveryStopped,
     refresh_source,
 )
+from aegis.services.career_intelligence import analyze_job
 from aegis.storage import discovery as storage
 
 
@@ -44,6 +47,7 @@ router = APIRouter(
 )
 
 BODY_LIMIT = 8192
+MATCH_SLOT = BoundedSemaphore(1)
 
 
 def execute(operation, *args, **kwargs):
@@ -311,3 +315,35 @@ async def save_job(
         user_id,
         identifier,
     ))
+
+
+@router.get("/match")
+def job_match(
+    request: Request,
+    user_id: int = Depends(authorize),
+):
+    params = list(
+        request.query_params.multi_items()
+    )
+
+    if len(params) != 1 or params[0][0] != "id":
+        deny(422, "Invalid query")
+
+    identifier = valid_id(params[0][1])
+
+    if not MATCH_SLOT.acquire(blocking=False):
+        deny(429, "Job matching busy")
+
+    try:
+        result = execute(
+            analyze_job,
+            user_id,
+            identifier,
+        )
+
+        reauthorize(request, user_id)
+
+        return respond(result)
+
+    finally:
+        MATCH_SLOT.release()

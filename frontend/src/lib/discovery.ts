@@ -1,3 +1,5 @@
+import type { JobIntelligenceResult } from "./matching";
+
 export type Freshness = "all" | "fresh" | "stale";
 
 export type Provider =
@@ -93,7 +95,7 @@ function revision(source: JobSource) {
   return source.revision;
 }
 
-type Endpoint = "sources" | "source" | "jobs" | "job";
+type Endpoint = "sources" | "source" | "jobs" | "job" | "match";
 
 function endpointPath(endpoint: Endpoint) {
   switch (endpoint) {
@@ -105,6 +107,8 @@ function endpointPath(endpoint: Endpoint) {
       return "/api/agent/career/jobs";
     case "job":
       return "/api/agent/career/job";
+    case "match":
+      return "/api/agent/career/match";
   }
 }
 
@@ -160,7 +164,7 @@ async function request<T>(
       413: "Request too large.",
       415: "Unsupported request type.",
       422: "Invalid discovery request.",
-      429: "Refresh busy. Try again shortly.",
+      429: "Operation busy. Try again shortly.",
       503: "Discovery temporarily unavailable.",
     };
 
@@ -171,6 +175,13 @@ async function request<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+export function getJobIntelligence(id: string) {
+  return request<JobIntelligenceResult>(
+    "match", "GET", undefined,
+    new URLSearchParams({ id: validId(id) }),
+  );
 }
 
 export async function listSources() {

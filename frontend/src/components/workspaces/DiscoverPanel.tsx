@@ -40,6 +40,8 @@ import {
   recognizeBoard,
 } from "@/lib/employer-directory";
 
+import JobIntelligence from "./JobIntelligence";
+
 import "./DiscoverPanel.css";
 
 const PROVIDERS: Record<Provider, string> = {
@@ -116,6 +118,10 @@ export function GuestDiscovery() {
             </div>
           </div>
           <span className="discover-tag">Fictional listing</span>
+          <p className="muted">
+            Personalized matching is available only in the
+            private Owner application.
+          </p>
         </article>
       ))}
     </section>
@@ -800,6 +806,12 @@ export default function DiscoverPanel({
               Close details
             </button>
           </div>
+
+          <JobIntelligence
+            key={`${selected.id}:${selected.last_seen_at}`}
+            job={selected}
+            disabled={busy}
+          />
 
           <p className="discover-description">
             {selected.description || "No description supplied."}
