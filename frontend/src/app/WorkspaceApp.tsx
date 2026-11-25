@@ -362,7 +362,7 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
                     <div className="eyebrow">
                       SYSTEM OVERVIEW
                     </div>
-                    <h1>Your command center.</h1>
+                    <h1>Your personal command center.</h1>
                     <p>
                       View service status, security controls
                       and available features.

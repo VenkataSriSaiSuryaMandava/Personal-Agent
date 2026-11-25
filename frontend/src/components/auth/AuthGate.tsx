@@ -269,6 +269,39 @@ export default function AuthGate({
 
   return (
     <main className="aegis-auth-screen">
+      <aside className="aegis-auth-hero">
+        <div className="aegis-auth-hero-brand">
+          <Shield size={25} />
+          <strong>Aegis AI</strong>
+        </div>
+
+        <div className="aegis-auth-hero-content">
+          <div className="aegis-auth-orbit" aria-hidden="true">
+            <div className="aegis-auth-orbit-inner">
+              <Shield size={66} />
+            </div>
+          </div>
+
+          <div className="aegis-auth-hero-kicker">
+            YOUR PERSONAL OPERATING SYSTEM
+          </div>
+          <h2>Everything you do.<br />One workspace.</h2>
+          <p>
+            Organize your work, explore opportunities,
+            manage knowledge and stay in control.
+          </p>
+
+          <div className="aegis-auth-feature-tags">
+            <span>Career intelligence</span>
+            <span>Productivity</span>
+            <span>Privacy controls</span>
+          </div>
+        </div>
+
+        <div className="aegis-auth-hero-footer">
+          Personal intelligence. Intentional control.
+        </div>
+      </aside>
       <section className="aegis-auth-card">
         <div className="aegis-auth-icon">
           <Shield size={36} />
