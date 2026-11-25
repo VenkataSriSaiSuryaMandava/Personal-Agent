@@ -18,6 +18,7 @@ import SystemStatus from "@/components/dashboard/SystemStatus";
 import Approvals from "@/components/dashboard/Approvals";
 import SettingsWorkspace from "@/components/settings/SettingsWorkspace";
 import FunctionalWorkspace from "@/components/workspaces/FunctionalWorkspace";
+import CareerWorkspace from "@/components/workspaces/CareerWorkspace";
 import WorkspaceSummary from "@/components/workspaces/WorkspaceSummary";
 
 import {
@@ -625,9 +626,17 @@ function Dashboard({ guest = false }: { guest?: boolean }) {
                 )
               )}
 
+              {active === "jobs" && (
+                <CareerWorkspace
+                  guest={guest}
+                  onAssistant={() => navigate("chat")}
+                />
+              )}
+
               {active !== "chat" &&
                active !== "overview" &&
-               active !== "settings" && (
+               active !== "settings" &&
+               active !== "jobs" && (
                 <FunctionalWorkspace
                   key={active}
                   workspace={active}

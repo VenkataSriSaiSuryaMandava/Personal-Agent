@@ -1,0 +1,393 @@
+.career-workspace {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  width: 100%;
+  max-width: 1500px;
+  margin-inline: auto;
+}
+
+.career-workspace > [hidden] {
+  display: none;
+}
+
+.career-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.career-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.career-heading h1 {
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 650;
+  letter-spacing: -.7px;
+}
+
+.career-heading svg,
+.career-group-heading svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.career-header .muted {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.career-privacy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.career-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.career-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 18px;
+  font-size: 13px;
+  background: var(--panel);
+}
+
+.career-tabs button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--hover);
+  font-weight: 600;
+}
+
+.career-applications {
+  min-width: 0;
+}
+
+.career-applications .fw-workspace > .page-heading {
+  display: none;
+}
+
+.career-applications .wx-pipeline-column {
+  min-height: 140px;
+  align-content: start;
+}
+
+.career-applications .wx-stage-empty {
+  min-height: 55px;
+}
+
+.career-panel {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  padding: 22px;
+}
+
+.career-panel-heading {
+  display: grid;
+  gap: 5px;
+}
+
+.career-panel-heading h2,
+.career-panel > h2 {
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.career-panel-heading .muted {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.career-panel .notice {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.career-panel form {
+  min-width: 0;
+}
+
+.career-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  align-items: start;
+}
+
+.career-fields label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.career-fields input,
+.career-fields textarea,
+.career-fields select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid color-mix(
+    in srgb, var(--muted) 65%, var(--border)
+  );
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.career-fields textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.career-fields select {
+  appearance: auto;
+}
+
+.career-fields input:focus-visible,
+.career-fields textarea:focus-visible,
+.career-fields select:focus-visible,
+.career-workspace button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.career-fields :disabled {
+  opacity: .65;
+}
+
+.career-wide {
+  grid-column: 1 / -1;
+}
+
+.career-group {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  background: var(--sidebar);
+  border-radius: 11px;
+  min-width: 0;
+}
+
+.career-group-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 650;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.career-panel > button {
+  justify-self: start;
+}
+
+.career-panel .fw-primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.career-panel .fw-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.career-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.career-metric {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.career-metric span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.career-metric strong {
+  font-size: 20px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.career-upload,
+.career-review {
+  background: var(--sidebar);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 20px;
+}
+
+.career-upload .career-fields > label:first-child {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.career-fields .career-file-picker {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 24px 16px;
+  border: 1px dashed var(--muted);
+  border-radius: 10px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.career-file-picker svg {
+  color: var(--accent);
+}
+
+.career-file-picker span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.career-file-picker input[type="file"] {
+  max-width: 440px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.career-file-picker input::file-selector-button {
+  color: var(--text);
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.career-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 28px 16px;
+}
+
+.career-empty svg {
+  color: var(--accent);
+}
+
+.career-empty h3 {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.career-documents {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit, minmax(min(100%, 340px), 1fr)
+  );
+  gap: 12px;
+}
+
+.career-document {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 16px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.career-document[data-active="true"] {
+  border-left: 3px solid var(--accent);
+}
+
+.career-document[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+.career-review textarea {
+  min-height: 300px;
+  line-height: 1.7;
+}
+
+@media (max-width: 700px) {
+  .career-workspace {
+    gap: 12px;
+  }
+
+  .career-panel,
+  .career-group,
+  .career-upload,
+  .career-review {
+    padding: 14px;
+  }
+
+  .career-fields,
+  .career-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .career-tabs button {
+    flex: 1 1 auto;
+    padding: 10px;
+  }
+
+  .career-privacy {
+    font-size: 11px;
+  }
+
+  .career-header .muted {
+    font-size: 13px;
+  }
+
+  .career-fields input,
+  .career-fields select,
+  .career-fields textarea {
+    font-size: 16px;
+  }
+}
