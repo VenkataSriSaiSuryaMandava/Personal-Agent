@@ -6,6 +6,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
+from aegis.storage.public_quota import apply_public_quota
+from aegis.storage.access_policy import require_storage_access
+
 
 PRIVATE_DIRECTORY = (
     Path.home()
@@ -18,6 +21,8 @@ DATABASE_PATH = PRIVATE_DIRECTORY / "aegis.sqlite3"
 
 
 def prepare_database(path: Path) -> None:
+    require_storage_access(path)
+
 
     path.parent.mkdir(
         mode=0o700,
@@ -78,6 +83,8 @@ def connect(
     try:
         connection.execute("PRAGMA foreign_keys = ON")
         connection.execute("PRAGMA busy_timeout = 5000")
+        apply_public_quota(connection, path)
+
 
         yield connection
 

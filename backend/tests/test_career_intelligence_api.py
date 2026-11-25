@@ -4,7 +4,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aegis.main import app
-from aegis.demo import app as demo_app
 from aegis.api import discovery as api
 from aegis.schemas.career import (
     CareerProfile,
@@ -282,12 +281,18 @@ def test_foreign_origin_denied(intelligence):
     ).status_code == 403
 
 
-def test_public_demo_isolation():
-    with TestClient(demo_app) as client:
+def test_public_matching_requires_authentication(monkeypatch):
+    from aegis.main import app
+
+    monkeypatch.setenv("AEGIS_RUNTIME_MODE", "public")
+    monkeypatch.setenv("AEGIS_GATEWAY_TOKEN", "a" * 64)
+
+    with TestClient(app) as client:
         assert client.get(
             ENDPOINT,
             params={"id": str(uuid4())},
-        ).status_code == 404
+            headers={"x-aegis-gateway-token": "a" * 64},
+        ).status_code == 401
 
 
 def test_local_matching_requires_no_network(

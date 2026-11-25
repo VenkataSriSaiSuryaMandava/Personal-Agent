@@ -1,4 +1,4 @@
-# Allowlist only the files needed to build the public demo.
+# Allowlist shared application source for the public runtime.
 **
 !frontend/
 !frontend/package.json
@@ -13,7 +13,12 @@
 !frontend/public/**
 !backend/
 !backend/aegis/
-!backend/aegis/demo.py
+!backend/pyproject.toml
+!backend/aegis/**
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/.pytest_cache/
 !deploy/
 !deploy/start.sh
 # Never include runtime credentials or local state, even under allowed paths.

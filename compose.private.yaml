@@ -15,6 +15,8 @@ services:
       HOME: /home/aegis
       AEGIS_PUBLIC_DEMO: "0"
       AEGIS_DEMO_MODE: "0"
+      AEGIS_RUNTIME_MODE: private
+      AEGIS_AI_ENABLED: "1"
 
     expose:
       - "8000"
@@ -37,6 +39,36 @@ services:
       retries: 3
       start_period: 15s
 
+  guest-backend:
+    image: aegis-private-backend
+    env_file:
+      - "${HOME}/Library/Application Support/AegisAI/guest-gateway.env"
+
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        export AEGIS_GATEWAY_TOKEN="$${AEGIS_GUEST_GATEWAY_TOKEN}"
+        unset AEGIS_GUEST_GATEWAY_TOKEN
+        exec python -m uvicorn aegis.main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log
+
+    environment:
+      HOME: /home/aegis
+      AEGIS_RUNTIME_MODE: public
+      AEGIS_PUBLIC_DEMO: "1"
+      AEGIS_DEMO_MODE: "1"
+      AEGIS_AI_ENABLED: "0"
+      AEGIS_CLOUD_ENABLED: "0"
+
+    expose:
+      - "8000"
+
+    networks:
+      - guest-network
+
+    mem_limit: 512m
+    restart: unless-stopped
+
   frontend:
     build:
       context: .
@@ -45,12 +77,18 @@ services:
 
     env_file:
       - "${HOME}/Library/Application Support/AegisAI/gateway.env"
+      - "${HOME}/Library/Application Support/AegisAI/guest-gateway.env"
 
     environment:
       NODE_ENV: production
       AEGIS_PUBLIC_DEMO: "0"
       AEGIS_LOCAL_BACKEND: "1"
       AEGIS_INTERNAL_BACKEND_URL: http://backend:8000
+      AEGIS_GUEST_BACKEND_URL: http://guest-backend:8000
+
+    networks:
+      - default
+      - guest-network
 
     ports:
       - "127.0.0.1:3000:3000"
@@ -58,8 +96,13 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      guest-backend:
+        condition: service_healthy
 
     restart: unless-stopped
 
 volumes:
   aegis_private_data:
+
+networks:
+  guest-network:

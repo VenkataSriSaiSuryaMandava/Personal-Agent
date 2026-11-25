@@ -3,7 +3,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aegis.main import app
-from aegis.demo import app as demo_app
 
 from aegis.schemas.discovery import JobListing
 from aegis.services import job_refresh
@@ -300,13 +299,20 @@ def test_unauthenticated_denied(method, endpoint):
     ("GET", "/job"),
     ("POST", "/job"),
 ])
-def test_public_backend_isolation(method, endpoint):
-    with TestClient(demo_app) as client:
+def test_public_discovery_requires_authentication(
+    method, endpoint, monkeypatch,
+):
+    monkeypatch.setenv("AEGIS_RUNTIME_MODE", "public")
+    monkeypatch.setenv("AEGIS_GATEWAY_TOKEN", "a" * 64)
+
+    with TestClient(app) as client:
         response = client.request(
-            method, PREFIX + endpoint,
+            method,
+            PREFIX + endpoint,
+            headers={"x-aegis-gateway-token": "a" * 64},
         )
 
-    assert response.status_code in {404, 405}
+    assert response.status_code == 401
 
 
 @pytest.mark.parametrize("endpoint", [

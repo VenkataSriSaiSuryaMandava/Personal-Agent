@@ -15,17 +15,16 @@ function formatBytes(bytes: number) {
 }
 
 export default function MemoryDiagnostics({
-  guest,
+  publicMode,
   refreshKey,
 }: {
-  guest: boolean;
+  publicMode: boolean;
   refreshKey: number;
 }) {
   const [result, setResult] = useState<WorkspaceSummaryData | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (guest) return;
 
     let active = true;
 
@@ -44,29 +43,19 @@ export default function MemoryDiagnostics({
     return () => {
       active = false;
     };
-  }, [guest, refreshKey]);
-
-  if (guest) {
-    return (
-      <section className="panel">
-        <strong>Private storage diagnostics</strong>
-        <p className="muted">
-          Available only in Owner mode. No private storage is
-          queried in the Guest preview.
-        </p>
-      </section>
-    );
-  }
+  }, [refreshKey]);
 
   return (
     <section className="panel wx-diagnostics">
-      <h2>Local memory and storage</h2>
+      <h2>{publicMode
+        ? "Session memory and storage"
+        : "Local memory and storage"}</h2>
 
       {!result ? (
         <p className="muted">
           {failed
             ? "Diagnostics unavailable. Refresh to retry."
-            : "Loading local storage metrics…"}
+            : "Loading storage metrics…"}
         </p>
       ) : (
         <div className="wx-metrics">

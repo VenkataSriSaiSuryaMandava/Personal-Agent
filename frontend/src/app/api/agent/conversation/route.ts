@@ -1,10 +1,19 @@
+import { guestSession } from "@/lib/server/backend-origin";
 import type { NextRequest } from "next/server";
 import { authResponse, rejectAuthRequest, requireSession, readSession } from "@/lib/server/auth";
-import { callBackend } from "@/lib/server/backend";
+import { callBackend, publicRuntime } from "@/lib/server/backend";
 
 export async function POST(request: NextRequest) {
   const rejected = rejectAuthRequest(request);
   if (rejected) return rejected;
+
+  if (publicRuntime() || guestSession(readSession(request))) {
+    return authResponse(
+      { detail: "AI is disabled in this deployment" },
+      403
+    );
+  }
+
   const unauthorized = await requireSession(request);
   if (unauthorized) return unauthorized;
 

@@ -1,4 +1,7 @@
 import { NextRequest } from "next/server";
+import { publicRuntime } from "@/lib/server/backend";
+import { guestSession } from "@/lib/server/backend-origin";
+import { readSession } from "@/lib/server/auth";
 
 import {
   authResponse,
@@ -17,5 +20,8 @@ export async function GET(request: NextRequest) {
 
   return authResponse({
     authenticated: true,
+    role: publicRuntime() || guestSession(readSession(request))
+      ? "guest"
+      : "owner",
   });
 }

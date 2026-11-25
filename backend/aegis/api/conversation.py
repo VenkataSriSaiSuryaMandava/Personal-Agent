@@ -36,7 +36,13 @@ from aegis.storage.settings import (
 )
 
 
-router = APIRouter(prefix="/api/v1")
+from aegis.security.runtime_policy import require_ai_enabled
+
+
+router = APIRouter(
+    prefix="/api/v1",
+    dependencies=[Depends(require_ai_enabled)],
+)
 MAX_BODY = 98304
 
 

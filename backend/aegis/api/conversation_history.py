@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 
 from aegis.api import auth
+from aegis.security.request_storage import request_database
 from aegis.api.auth import deny, SECURITY_HEADERS
 
 from aegis.storage.conversations import (
@@ -78,7 +79,7 @@ def execute(operation, *args):
     try:
         return operation(
             *args,
-            path=auth.service.path,
+            path=request_database(auth.service.path),
         )
 
     except ConversationNotFound:

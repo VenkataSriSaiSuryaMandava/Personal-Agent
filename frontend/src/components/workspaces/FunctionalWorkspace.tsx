@@ -30,10 +30,6 @@ import MemoryDiagnostics from "./MemoryDiagnostics";
 import "./FunctionalWorkspace.css";
 import "./WorkspaceExperience.css";
 
-function currentTimestamp() {
-  return Math.floor(Date.now() / 1000);
-}
-
 function currentLocalDay() {
   return localDate(
     new Date().toISOString(),
@@ -77,12 +73,12 @@ function localDate(value: string) {
 
 export default function FunctionalWorkspace({
   workspace,
-  guest,
+  publicMode,
   onAssistant,
   refreshVersion = 0,
 }: {
   workspace: RecordWorkspace;
-  guest: boolean;
+  publicMode: boolean;
   onAssistant: () => void;
   refreshVersion?: number;
 }) {
@@ -124,7 +120,7 @@ export default function FunctionalWorkspace({
     return () => window.clearInterval(timer);
   }, []);
   const [filter, setFilter] = useState("all");
-  const [busy, setBusy] = useState(!guest);
+  const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -134,7 +130,6 @@ export default function FunctionalWorkspace({
 
   useEffect(() => {
     if (
-      guest ||
       busy ||
       operation.current ||
       loadedVersion.current === refreshVersion
@@ -169,39 +164,37 @@ export default function FunctionalWorkspace({
       active = false;
       operation.current = false;
     };
-  }, [refreshVersion, workspace, guest, busy]);
+  }, [refreshVersion, workspace, busy]);
 
   useEffect(() => {
     let active = true;
 
     mounted.current = true;
 
-    if (!guest) {
-      listRecords(workspace)
-        .then(result => {
-          if (!active) return;
+    listRecords(workspace)
+      .then(result => {
+        if (!active) return;
 
-          setRecords(result.records);
-          setNextOffset(result.next_offset);
-        })
-        .catch(() => {
-          if (active) {
-            setError("Unable to load workspace. Use Refresh to retry.");
-          }
-        })
-        .finally(() => {
-          if (active) setBusy(false);
-        });
-    }
+        setRecords(result.records);
+        setNextOffset(result.next_offset);
+      })
+      .catch(() => {
+        if (active) {
+          setError("Unable to load workspace. Use Refresh to retry.");
+        }
+      })
+      .finally(() => {
+        if (active) setBusy(false);
+      });
 
     return () => {
       active = false;
       mounted.current = false;
     };
-  }, [workspace, guest]);
+  }, [workspace]);
 
   async function reconcileAfterMutation() {
-    if (guest || !mounted.current) return;
+    if (!mounted.current) return;
 
     // A mutation can change list ordering and offsets.
     // Never continue pagination using the old offset.
@@ -263,7 +256,7 @@ export default function FunctionalWorkspace({
   }
 
   async function refresh(append = false) {
-    if (guest || operation.current) return;
+    if (operation.current) return;
 
     operation.current = true;
     setBusy(true);
@@ -324,29 +317,11 @@ export default function FunctionalWorkspace({
           : "",
       };
 
-      let saved: WorkspaceRecord;
-
-      if (guest) {
-        const now = currentTimestamp();
-
-        saved = {
-          ...input,
-          id: editing?.id ??
-            crypto.randomUUID(),
-          workspace,
-          revision:
-            (editing?.revision ?? 0) + 1,
-          created_at:
-            editing?.created_at ?? now,
-          updated_at: now,
-        };
-      } else {
-        saved = await saveRecord(
-          workspace,
-          input,
-          editing ?? undefined,
-        );
-      }
+      const saved = await saveRecord(
+        workspace,
+        input,
+        editing ?? undefined,
+      );
 
       if (!mounted.current) return;
 
@@ -360,11 +335,7 @@ export default function FunctionalWorkspace({
       setShowForm(false);
       setEditing(null);
 
-      setNotice(
-        guest
-          ? "Temporary sample record saved."
-          : "Record saved locally.",
-      );
+      setNotice("Record saved.");
 
       await reconcileAfterMutation();
     } catch (failure) {
@@ -397,9 +368,7 @@ export default function FunctionalWorkspace({
     setNotice("");
 
     try {
-      if (!guest) {
-        await removeRecord(record);
-      }
+      await removeRecord(record);
 
       if (!mounted.current) return;
 
@@ -454,14 +423,9 @@ export default function FunctionalWorkspace({
         status,
       };
 
-      const saved = guest
-        ? {
-            ...record,
-            ...input,
-            revision: record.revision + 1,
-            updated_at: currentTimestamp(),
-          }
-        : await saveRecord(workspace, input, record);
+      const saved = await saveRecord(
+        workspace, input, record,
+      );
 
       if (!mounted.current) return;
 
@@ -536,8 +500,8 @@ export default function FunctionalWorkspace({
     <div className="fw-workspace wx-workspace" data-kind={workspace}>
       <div className="page-heading">
         <div className="eyebrow">
-          {guest
-            ? "TEMPORARY DEMO"
+          {publicMode
+            ? "PUBLIC WORKSPACE"
             : "PRIVATE WORKSPACE"}
         </div>
 
@@ -549,8 +513,8 @@ export default function FunctionalWorkspace({
       </div>
 
       <div className="notice">
-        {guest
-          ? "Use fictional information only. Sample records are temporary and reset when leaving this workspace."
+        {publicMode
+          ? "Records are saved in your temporary isolated session. Use non-sensitive sample information."
           : "Records stay in your local database. No external actions or AI requests are triggered."}
       </div>
 
@@ -560,7 +524,7 @@ export default function FunctionalWorkspace({
         filter={filter}
         onFilter={setFilter}
         incomplete={nextOffset !== null}
-        guest={guest}
+        publicMode={publicMode}
         onAssistant={onAssistant}
       />
 
@@ -568,7 +532,7 @@ export default function FunctionalWorkspace({
 
       {workspace === "memory" && (
         <MemoryDiagnostics
-          guest={guest}
+          publicMode={publicMode}
           refreshKey={metricsRevision}
         />
       )}
@@ -598,15 +562,13 @@ export default function FunctionalWorkspace({
         </button>
         )}
 
-        {!guest && (
-          <button
-            className="secondary-button"
-            disabled={busy}
-            onClick={() => void refresh()}
-          >
-            Refresh
-          </button>
-        )}
+        <button
+          className="secondary-button"
+          disabled={busy}
+          onClick={() => void refresh()}
+        >
+          Refresh
+        </button>
 
         <input
           aria-label="Search records"
@@ -993,10 +955,10 @@ export default function FunctionalWorkspace({
 
       <IntegrationPanel
         workspace={workspace}
-        guest={guest}
+
       />
 
-      {!guest && nextOffset !== null && (
+      {nextOffset !== null && (
         <button
           className="secondary-button"
           disabled={busy}

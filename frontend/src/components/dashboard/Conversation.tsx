@@ -579,7 +579,7 @@ export default function Conversation({
         <div className="ac-brand"><span className="ac-logo"><Sparkles size={22} /></span><div>
           <h2 title={activeTitle ?? "Aegis Assistant"}>
             {activeTitle ?? "Aegis Assistant"}
-          </h2><p>{guest ? "AI unavailable in Guest mode" : "Gemini 3.1 Flash-Lite · Cloud assistant"}</p>
+          </h2><p>{guest ? "AI disabled in this deployment" : "Gemini 3.1 Flash-Lite · Cloud assistant"}</p>
         </div></div>
         <button type="button" className="ac-button" disabled={busy || historyBusy} onClick={newChat}><Plus size={16}/> New chat</button>
       </header>
@@ -612,11 +612,11 @@ export default function Conversation({
         {pending && <article className="ac-turn"><div className="ac-user"><span>You</span><p>{pending}</p></div><div className="ac-loading" role="status"><LoaderCircle size={18}/> Generating response…</div></article>}
       </div>
       <form className="ac-composer" onSubmit={event => { event.preventDefault(); void send(); }}>
-        <textarea aria-label="Message Aegis" placeholder={guest ? "Try the composer — AI requires Owner access" : "Ask Aegis anything non-private…"} value={draft} maxLength={4000} rows={3} disabled={busy || historyBusy} onChange={event => update(event.target.value)} onKeyDown={event => {
+        <textarea aria-label="Message Aegis" placeholder={guest ? "AI is unavailable in this deployment" : "Ask Aegis anything non-private…"} value={draft} maxLength={4000} rows={3} disabled={guest || busy || historyBusy} onChange={event => update(event.target.value)} onKeyDown={event => {
           if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); void send(); }
         }}/>
         <div className="ac-privacy-bar">
-          <span>{guest ? "AI access requires Owner Login" : "Gemini cloud AI · Send only non-private content"}</span>
+          <span>{guest ? "AI disabled · Public workspace" : "Gemini cloud AI · Send only non-private content"}</span>
           <label>
             <input
               type="checkbox"

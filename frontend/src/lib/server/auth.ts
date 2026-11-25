@@ -1,12 +1,17 @@
-import { backendOrigin } from "./backend-origin";
+import {
+  guestAvailable,
+  guestSession,
+  sessionBackend,
+  sessionGateway,
+  sessionBearer,
+} from "./backend-origin";
 import { NextRequest, NextResponse } from "next/server";
-import { rejectRequest } from "./backend";
+import { rejectRequest, publicRuntime, publicOrigin } from "./backend";
 
 export const SESSION_COOKIE = "aegis_session";
 
 const SESSION_DURATION = 43200;
 
-const BACKEND_URL = backendOrigin();
 
 const AUTH_HEADERS = {
   "Cache-Control": "no-store",
@@ -14,7 +19,7 @@ const AUTH_HEADERS = {
   "X-Content-Type-Options": "nosniff",
 };
 
-type AuthEndpoint = "login" | "session" | "logout";
+type AuthEndpoint = "login" | "session" | "logout" | "guest";
 
 export function authResponse(
   payload: object,
@@ -29,7 +34,12 @@ export function authResponse(
 export function readSession(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
 
-  if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) {
+  if (!token || !/^(?:guest\.)?[A-Za-z0-9_-]{43}$/.test(token)) {
+    return null;
+  }
+
+  if (guestSession(token) &&
+      (publicRuntime() || !guestAvailable())) {
     return null;
   }
 
@@ -40,7 +50,9 @@ function cookieOptions(request: NextRequest) {
   return {
     httpOnly: true,
     sameSite: "strict" as const,
-    secure: request.nextUrl.protocol === "https:",
+    secure: publicRuntime()
+      ? publicOrigin()?.startsWith("https://") !== false
+      : request.nextUrl.protocol === "https:",
     path: "/",
   };
 }
@@ -71,21 +83,7 @@ export function clearSession(
 }
 
 export function rejectAuthRequest(request: NextRequest) {
-  const rejected = rejectRequest(request);
-
-  if (rejected) return rejected;
-
-  const host = request.headers.get("host");
-  const origin = request.headers.get("origin");
-
-  if (origin && origin !== `http://${host}`) {
-    return authResponse(
-      { detail: "Invalid request origin" },
-      403
-    );
-  }
-
-  return null;
+  return rejectRequest(request);
 }
 
 export async function authBackend(
@@ -93,7 +91,7 @@ export async function authBackend(
   init: RequestInit = {},
   session?: string
 ) {
-  const gateway = process.env.AEGIS_GATEWAY_TOKEN;
+  const gateway = sessionGateway(endpoint === "guest" && !publicRuntime() ? "guest." : session);
 
   if (!gateway || gateway.length < 64) {
     return authResponse(
@@ -107,12 +105,17 @@ export async function authBackend(
   headers.set("x-aegis-gateway-token", gateway);
 
   if (session) {
-    headers.set("Authorization", `Bearer ${session}`);
+    headers.set("Authorization", `Bearer ${sessionBearer(session)}`);
   }
 
   try {
+    const destination =
+      endpoint === "guest" && !publicRuntime()
+        ? sessionBackend("guest.")
+        : sessionBackend(session);
+
     return await fetch(
-      `${BACKEND_URL}/api/v1/auth/${endpoint}`,
+      `${destination}/api/v1/auth/${endpoint}`,
       {
         ...init,
         headers,

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { backendOrigin } from "./backend-origin";
+import {
+  sessionBackend,
+  sessionGateway,
+  sessionBearer,
+} from "./backend-origin";
 
 import {
   authResponse,
@@ -130,8 +134,8 @@ export async function careerGateway(
     );
   }
 
-  const gateway = process.env.AEGIS_GATEWAY_TOKEN;
   const session = readSession(request);
+  const gateway = sessionGateway(session);
 
   if (!gateway || gateway.length < 64 || !session) {
     return authResponse(
@@ -141,7 +145,7 @@ export async function careerGateway(
 
   const headers = new Headers({
     "x-aegis-gateway-token": gateway,
-    Authorization: `Bearer ${session}`,
+    Authorization: `Bearer ${sessionBearer(session)}`,
   });
 
   const upload =
@@ -198,7 +202,7 @@ export async function careerGateway(
     }
 
     const destination = new URL(
-      endpointPath(endpoint), backendOrigin(),
+      endpointPath(endpoint), sessionBackend(session),
     );
 
     destination.search = query.toString();

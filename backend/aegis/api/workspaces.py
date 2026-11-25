@@ -14,6 +14,7 @@ from starlette.concurrency import (
 )
 
 from aegis.api import auth
+from aegis.security.request_storage import request_database
 
 from aegis.api.auth import deny
 
@@ -43,7 +44,7 @@ def execute(operation, *args):
     try:
         return operation(
             *args,
-            path=auth.service.path,
+            path=request_database(auth.service.path),
         )
 
     except storage.RecordNotFound:

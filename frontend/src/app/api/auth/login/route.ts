@@ -1,16 +1,32 @@
 import { NextRequest } from "next/server";
+import { publicRuntime } from "@/lib/server/backend";
 
 import {
   authBackend,
   authResponse,
   rejectAuthRequest,
   setSession,
+  readSession,
 } from "@/lib/server/auth";
 
 export async function POST(request: NextRequest) {
   const rejected = rejectAuthRequest(request);
 
   if (rejected) return rejected;
+
+  if (publicRuntime()) {
+    return authResponse(
+      { detail: "Owner login unavailable in public mode" },
+      403
+    );
+  }
+
+  if (readSession(request)?.startsWith("guest.")) {
+    return authResponse(
+      { detail: "End guest session before Owner login" },
+      409
+    );
+  }
 
   const type = request.headers
     .get("content-type")
@@ -137,7 +153,7 @@ export async function POST(request: NextRequest) {
 
     return setSession(
       request,
-      authResponse({ authenticated: true }),
+      authResponse({ authenticated: true, role: "owner" }),
       result.session_token
     );
   } catch {

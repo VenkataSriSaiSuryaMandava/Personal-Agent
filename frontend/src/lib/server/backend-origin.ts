@@ -20,3 +20,34 @@ export function backendOrigin(): string {
 
   return configured;
 }
+
+
+export function guestSession(session?: string | null): boolean {
+  return session?.startsWith("guest.") === true;
+}
+
+export function guestAvailable(): boolean {
+  return process.env.AEGIS_GUEST_BACKEND_URL ===
+    "http://guest-backend:8000";
+}
+
+export function sessionBackend(session?: string | null): string {
+  if (!guestSession(session)) return backendOrigin();
+
+  if (!guestAvailable()) {
+    throw new Error("Guest backend unavailable");
+  }
+
+  return "http://guest-backend:8000";
+}
+
+export function sessionBearer(session: string): string {
+  return guestSession(session) ? session.slice(6) : session;
+}
+
+
+export function sessionGateway(session?: string | null) {
+  return guestSession(session)
+    ? process.env.AEGIS_GUEST_GATEWAY_TOKEN
+    : process.env.AEGIS_GATEWAY_TOKEN;
+}

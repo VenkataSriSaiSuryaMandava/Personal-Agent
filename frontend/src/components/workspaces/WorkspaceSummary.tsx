@@ -21,10 +21,8 @@ import "./FunctionalWorkspace.css";
 import "./WorkspaceExperience.css";
 
 export default function WorkspaceSummary({
-  guest,
   onNavigate,
 }: {
-  guest: boolean;
   onNavigate: (workspace: Workspace) => void;
 }) {
   const [summary, setSummary] =
@@ -36,7 +34,6 @@ export default function WorkspaceSummary({
     useState(false);
 
   useEffect(() => {
-    if (guest) return;
 
     let active = true;
 
@@ -51,7 +48,7 @@ export default function WorkspaceSummary({
     return () => {
       active = false;
     };
-  }, [guest]);
+  }, []);
 
   return (
     <section className="panel">
@@ -59,7 +56,7 @@ export default function WorkspaceSummary({
         <h2>Workspace records</h2>
       </div>
 
-      {!guest && summary && (
+      {summary && (
         <div className="wx-overview-priorities">
           <button onClick={() => onNavigate("tasks")}>
             <span>Open tasks</span>
@@ -103,28 +100,21 @@ export default function WorkspaceSummary({
               <span>{label}</span>
 
               <strong>
-                {guest
-                  ? "Demo"
-                  : counts?.[workspace] ?? "—"}
+                {counts?.[workspace] ?? "—"}
               </strong>
             </button>
           );
         })}
       </div>
 
-      {!guest && !counts && (
+      {!counts && (
         <p className="muted">
           {failed
             ? "Workspace counts unavailable."
-            : "Loading local record counts..."}
+            : "Loading workspace record counts..."}
         </p>
       )}
 
-      {guest && (
-        <p className="muted">
-          Guest records are temporary.
-        </p>
-      )}
     </section>
   );
 }
