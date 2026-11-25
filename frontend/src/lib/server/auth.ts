@@ -89,7 +89,8 @@ export function rejectAuthRequest(request: NextRequest) {
 export async function authBackend(
   endpoint: AuthEndpoint,
   init: RequestInit = {},
-  session?: string
+  session?: string,
+  query?: URLSearchParams
 ) {
   const gateway = sessionGateway(endpoint === "guest" && !publicRuntime() ? "guest." : session);
 
@@ -114,8 +115,17 @@ export async function authBackend(
         ? sessionBackend("guest.")
         : sessionBackend(session);
 
+    const url = new URL(
+      `/api/v1/auth/${endpoint}`,
+      destination
+    );
+
+    if (query && endpoint === "guest") {
+      url.search = query.toString();
+    }
+
     return await fetch(
-      `${destination}/api/v1/auth/${endpoint}`,
+      url,
       {
         ...init,
         headers,

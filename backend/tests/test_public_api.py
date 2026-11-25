@@ -405,3 +405,74 @@ def test_public_storage_metadata(environment):
     assert result["integrity"] == "ok"
     assert result["local_only"] is False
     assert result["encrypted_by_application"] is False
+
+
+@pytest.mark.parametrize("authenticated", [False, True])
+def test_guest_query_rejected(environment, authenticated):
+    client, gateway = environment
+
+    headers = (
+        visitor(client, gateway)
+        if authenticated else gateway
+    )
+
+    response = client.post(
+        "/api/v1/auth/guest?unexpected=1",
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_guest_resume_preserves_session(environment):
+    client, gateway = environment
+    headers = visitor(client, gateway)
+
+    token = headers["Authorization"].split(" ", 1)[1]
+
+    for _ in range(5):
+        response = client.post(
+            "/api/v1/auth/guest",
+            headers=headers,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["session_token"] == token
+
+
+def test_revoked_guest_cannot_resume(environment):
+    client, gateway = environment
+    headers = visitor(client, gateway)
+
+    assert client.post(
+        "/api/v1/auth/logout",
+        headers=headers,
+    ).status_code == 200
+
+    assert client.post(
+        "/api/v1/auth/guest",
+        headers=headers,
+    ).status_code == 401
+
+
+def test_guest_resume_requires_gateway(environment):
+    client, gateway = environment
+    headers = visitor(client, gateway)
+
+    assert client.post(
+        "/api/v1/auth/guest",
+        headers={
+            "Authorization": headers["Authorization"],
+        },
+    ).status_code == 403
+
+
+def test_guest_resume_rejects_body(environment):
+    client, gateway = environment
+    headers = visitor(client, gateway)
+
+    assert client.post(
+        "/api/v1/auth/guest",
+        headers=headers,
+        json={},
+    ).status_code == 422

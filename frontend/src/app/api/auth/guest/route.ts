@@ -25,13 +25,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (request.nextUrl.search) {
-    return authResponse(
-      { detail: "Unexpected request data" },
-      422
-    );
-  }
-
   // An empty POST may still have a readable body stream.
   // Reject actual payload bytes without buffering the body.
   const reader = request.body?.getReader();
@@ -71,33 +64,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (existing) {
-    const session = await authBackend(
-      "session",
-      { method: "GET" },
-      existing
+  // The isolated backend validates the query and session
+  // before either resuming or creating a visitor.
+  const query = request.nextUrl.searchParams;
+
+  let response = await authBackend(
+    "guest",
+    { method: "POST" },
+    existing ?? undefined,
+    query
+  );
+
+  if (response.status === 401 && existing) {
+    response = await authBackend(
+      "guest",
+      { method: "POST" },
+      undefined,
+      query
     );
-
-    if (session.ok) {
-      const result = await session.json().catch(() => null);
-
-      if (result?.authenticated === true) {
-        return authResponse({ authenticated: true, role: "guest" });
-      }
-    }
-
-    if (session.status !== 401) {
-      return authResponse(
-        { detail: "Session temporarily unavailable" },
-        session.status === 429 ? 429 : 503
-      );
-    }
   }
 
-  const response = await authBackend(
-    "guest",
-    { method: "POST" }
-  );
+  if (response.status === 422) {
+    return authResponse(
+      { detail: "Unexpected request data" },
+      422
+    );
+  }
 
   if (!response.ok) {
     return authResponse(

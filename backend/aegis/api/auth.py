@@ -189,6 +189,31 @@ async def guest(request: Request):
         if chunk:
             deny(422, "Unexpected request body")
 
+    # Resume an existing visitor only after server-side
+    # validation of the gateway, request and session.
+    if request.headers.get("authorization") is not None:
+        token = read_session_token(request)
+
+        def resume():
+            with public_sessions.lease(token):
+                if not public_limits.allow_request(token):
+                    deny(429, "Public request limit reached")
+
+        try:
+            await run_in_threadpool(resume)
+        except SessionDenied:
+            deny(401, "Invalid or expired session")
+        except (sqlite3.Error, OSError):
+            deny(503, "Public session unavailable")
+
+        return JSONResponse(
+            content=LoginResponse(
+                session_token=token,
+                expires_in=SESSION_DURATION,
+            ).model_dump(),
+            headers=SECURITY_HEADERS,
+        )
+
     if not public_limits.allow_creation():
         deny(429, "Public session creation limit reached")
 
