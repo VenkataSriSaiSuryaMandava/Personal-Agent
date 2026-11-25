@@ -12,6 +12,11 @@ import { PanelLeft, MessageSquare } from "lucide-react";
 import AuthGate from "@/components/auth/AuthGate";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import {
+  Button,
+  Notification,
+  WorkspaceSkeleton,
+} from "@/components/ui/WorkspaceUI";
 import StatusCard from "@/components/dashboard/StatusCard";
 import Conversation from "@/components/dashboard/Conversation";
 import SystemStatus from "@/components/dashboard/SystemStatus";
@@ -310,6 +315,8 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
             title={current.label}
             dark={dark}
             guest={publicMode}
+            onNavigate={navigate}
+            commandDisabled={loading}
             themeDisabled={loading || busy || !snapshot}
             onToggleTheme={() => {
               void save({ theme: dark ? "light" : "dark" });
@@ -319,30 +326,15 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
 
         <div className="workspace-content ac-workspace">
           {message && (
-            <div
-              className={
-                failed
-                  ? "as-error as-global-message"
-                  : "as-global-message muted"
-              }
-              role={failed ? "alert" : "status"}
-            >
-              {message}
-              {" "}
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setMessage("")}
-              >
-                Dismiss
-              </button>
-            </div>
+            <Notification
+              message={message}
+              failed={failed}
+              onDismiss={() => setMessage("")}
+            />
           )}
 
           {loading ? (
-            <section className="panel" role="status">
-              Loading workspace preferences…
-            </section>
+            <WorkspaceSkeleton />
           ) : (
             <>
               <div
@@ -362,7 +354,7 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
                     <div className="eyebrow">
                       SYSTEM OVERVIEW
                     </div>
-                    <h1>Your command center.</h1>
+                    <h1>Your personal command center.</h1>
                     <p>
                       View service status, security controls
                       and available features.
@@ -406,12 +398,12 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
                             ? "AI is unavailable in the public deployment."
                             : "Ask questions, compare ideas and generate code with the AI assistant."}
                         </p>
-                        <button
-                          className="secondary-button"
+                        <Button
+                          variant="primary"
                           onClick={() => navigate("chat")}
                         >
                           {publicMode ? "Open Chat" : "Ask Aegis →"}
-                        </button>
+                        </Button>
                       </section>
 
 
@@ -422,12 +414,12 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
                           Configure preferences, inspect providers
                           and review settings activity.
                         </p>
-                        <button
-                          className="secondary-button"
+                        <Button
+                          variant="primary"
                           onClick={() => navigate("settings")}
                         >
                           Open Settings →
-                        </button>
+                        </Button>
                       </section>
                     </div>
 

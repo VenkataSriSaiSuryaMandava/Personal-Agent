@@ -1,0 +1,1080 @@
+/* Aegis premium visual system.
+   Existing functional and security behavior is unchanged. */
+
+.app-shell {
+  color-scheme: dark;
+  --bg: #101219;
+  --sidebar: #171922;
+  --panel: #1b1e28;
+  --border: #2d313f;
+  --text: #f1f2f7;
+  --muted: #a0a7ba;
+  --hover: #292b40;
+  --accent: #aca5ff;
+  --primary: #6258d9;
+  --primary-hover: #5147c5;
+  --surface-soft: #141720;
+  --success: #65c9a6;
+  --shadow: 0 5px 20px #00000016;
+  --radius: 16px;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app-shell[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f6fa;
+  --sidebar: #fdfdff;
+  --panel: #ffffff;
+  --border: #e0e3ec;
+  --text: #202334;
+  --muted: #626b80;
+  --hover: #eeecfc;
+  --accent: #5146bd;
+  --primary: #6258d9;
+  --primary-hover: #5147c5;
+  --surface-soft: #f8f9fc;
+  --success: #13795d;
+  --shadow: 0 5px 22px #25305208;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.app-shell *,
+.aegis-auth-screen * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border, #44485c) transparent;
+}
+
+.app-shell button,
+.app-shell a,
+.app-shell input,
+.app-shell textarea,
+.app-shell select {
+  transition: background-color .16s ease,
+    border-color .16s ease,
+    box-shadow .16s ease,
+    color .16s ease;
+}
+
+.app-shell :is(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Operating-system shell */
+
+.app-shell.ac-shell .sidebar {
+  width: 252px;
+  padding: 24px 14px 16px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  top: 0;
+}
+
+.app-shell .brand {
+  padding: 0 10px 28px;
+  gap: 11px;
+}
+
+.app-shell .brand-icon,
+.app-shell .assistant-icon,
+.app-shell .ac-logo,
+.app-shell .ac-hero-icon {
+  color: #fff;
+  background: linear-gradient(145deg, #857af5, #5145c6);
+  box-shadow: 0 5px 15px #6258d930;
+  border-radius: 12px;
+}
+
+.app-shell .brand-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.app-shell .brand strong {
+  font-size: 20px;
+  letter-spacing: -.7px;
+}
+
+.app-shell .brand small {
+  font-size: 9px;
+  letter-spacing: .10em;
+}
+
+.app-shell .nav-heading {
+  padding: 0 12px 8px;
+  font-size: 10px;
+  letter-spacing: .09em;
+  font-weight: 650;
+}
+
+.aegis-nav-group {
+  margin-bottom: 21px;
+}
+
+.app-shell .nav-item {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  min-height: 40px;
+  padding: 9px 12px;
+  gap: 11px;
+  margin-bottom: 3px;
+}
+
+.app-shell .nav-item:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.app-shell .nav-item.active {
+  background: var(--hover);
+  border-color: color-mix(
+    in srgb, var(--accent) 17%, transparent
+  );
+  color: var(--accent);
+}
+
+.app-shell .nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.app-shell .sidebar-footer {
+  line-height: 1.5;
+  padding: 15px 10px 0;
+}
+
+.app-shell .ac-topbar-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--sidebar);
+  padding-left: 20px;
+}
+
+.app-shell .topbar {
+  background: transparent;
+  min-height: 65px;
+  padding: 12px 25px 12px 16px;
+}
+
+.app-shell .breadcrumb {
+  font-size: 12px;
+}
+
+.app-shell .icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 37px;
+  height: 37px;
+  border-radius: 9px;
+  background: var(--panel);
+}
+
+.app-shell .icon-button:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+.app-shell .mode-label {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.app-shell .workspace-content {
+  max-width: 1560px;
+  padding: 30px clamp(20px, 3vw, 46px);
+}
+
+.app-shell .page-heading {
+  margin-bottom: 26px;
+}
+
+.app-shell .page-heading h1,
+.app-shell .career-heading h1,
+.app-shell .ac-welcome h1 {
+  font-weight: 650;
+  letter-spacing: -.045em;
+  line-height: 1.18;
+  font-size: clamp(26px, 3vw, 36px);
+}
+
+.app-shell .page-heading p {
+  line-height: 1.7;
+  max-width: 760px;
+  font-size: 13px;
+}
+
+.app-shell .eyebrow,
+.app-shell .ac-eyebrow {
+  color: var(--accent);
+  letter-spacing: .10em;
+  font-weight: 650;
+  font-size: 10px;
+}
+
+/* Shared cards and workspace surfaces */
+
+.app-shell :is(
+  .panel, .status-card, .ac-panel, .ac-history
+) {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.app-shell .panel {
+  padding: clamp(16px, 2vw, 24px);
+}
+
+.app-shell .panel-heading h2,
+.app-shell .wx-section-heading h2,
+.app-shell .fw-list-heading h2,
+.app-shell .career-panel-heading h2,
+.app-shell .as-panel h2 {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -.025em;
+}
+
+.app-shell .muted {
+  line-height: 1.6;
+}
+
+.app-shell .stats-grid {
+  gap: 14px;
+}
+
+.app-shell .status-card {
+  min-width: 0;
+  padding: 21px;
+}
+
+.app-shell .status-card h2 {
+  font-size: clamp(21px, 2.4vw, 28px);
+  letter-spacing: -.04em;
+  overflow-wrap: anywhere;
+}
+
+.app-shell .status-card small {
+  display: block;
+  line-height: 1.5;
+}
+
+.app-shell .dashboard-grid {
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.5fr)
+    minmax(260px, 1fr);
+}
+
+.app-shell .ac-overview-card {
+  min-height: 220px;
+  padding: 30px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--panel) 90%, var(--accent)),
+    var(--panel) 85%
+  );
+}
+
+.app-shell .ac-overview-card h2 {
+  font-size: clamp(23px, 2.5vw, 30px);
+  font-weight: 650;
+  letter-spacing: -.04em;
+}
+
+.app-shell .service-row {
+  padding-block: 14px;
+}
+
+/* Buttons, form elements and interactive surfaces */
+
+.app-shell :is(
+  .secondary-button, .ac-button, .ac-copy
+) {
+  color: var(--text);
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-weight: 550;
+  line-height: 1.5;
+}
+
+.app-shell :is(
+  .secondary-button, .ac-button, .ac-copy
+):hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--hover);
+}
+
+.app-shell :is(
+  .fw-primary, .as-primary, .ac-send,
+  .inference-button, .chat-input button,
+  .ac-overview-card button
+) {
+  background: var(--primary);
+  border: 1px solid transparent;
+  color: #fff;
+  border-radius: 9px;
+  font-weight: 600;
+}
+
+.app-shell :is(
+  .fw-primary, .as-primary, .ac-send,
+  .inference-button, .chat-input button,
+  .ac-overview-card button
+):hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.app-shell :is(
+  input:not([type="checkbox"]):not([type="radio"])
+    :not([type="range"]):not([type="file"]),
+  select,
+  textarea
+) {
+  font-family: inherit;
+}
+
+.app-shell :is(
+  .fw-form, .fw-controls, .career-fields,
+  .as-field, .inference-panel
+) :is(input:not([type="checkbox"]):not([type="radio"]),
+      textarea, select) {
+  border-radius: 9px;
+  color: var(--text);
+  background-color: var(--surface-soft);
+}
+
+.app-shell :is(input, textarea)::placeholder {
+  color: var(--muted);
+  opacity: .9;
+}
+
+.app-shell input:is([type="checkbox"], [type="radio"]) {
+  accent-color: var(--primary);
+}
+
+.app-shell button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* AI conversation and history */
+
+.app-shell .ac-panel {
+  max-width: none;
+}
+
+.app-shell .ac-header {
+  padding: 17px 22px;
+  background: var(--panel);
+}
+
+.app-shell .ac-history {
+  background: var(--sidebar);
+}
+
+.app-shell .ac-history-item {
+  border-radius: 9px;
+}
+
+.app-shell .ac-history-item[data-active="true"] {
+  background: var(--hover);
+}
+
+.app-shell .ac-composer {
+  border-radius: 18px;
+  border-color: var(--border);
+  background: var(--surface-soft);
+  box-shadow: var(--shadow);
+}
+
+.app-shell .ac-composer:focus-within {
+  border-color: var(--accent);
+}
+
+.app-shell .ac-scroll {
+  background: var(--panel);
+}
+
+.app-shell .ac-user {
+  border-radius: 16px 16px 4px 16px;
+  border: 1px solid var(--border);
+}
+
+.app-shell .ac-markdown {
+  line-height: 1.8;
+}
+
+.app-shell .ac-suggestions button {
+  border-radius: 13px;
+  background: var(--surface-soft);
+}
+
+.app-shell .ac-review {
+  border-radius: 12px;
+}
+
+.app-shell .ac-action-menu {
+  border-radius: 10px;
+  box-shadow: 0 12px 30px #00000020;
+}
+
+.app-shell[data-theme="light"] .ac-markdown pre {
+  color: #263148;
+  background: #f1f3f8;
+  border-color: var(--border);
+}
+
+/* Productivity workspaces */
+
+.app-shell :is(
+  .fw-record, .wx-metric, .wx-integration,
+  .wx-diagnostic, .wx-agenda-day,
+  .wx-pipeline-column
+) {
+  border-radius: 12px;
+  border-color: var(--border);
+}
+
+.app-shell .fw-record {
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.app-shell .wx-metric {
+  background: var(--panel);
+}
+
+.app-shell .wx-metric strong,
+.app-shell .career-metric strong {
+  font-weight: 650;
+  letter-spacing: -.035em;
+}
+
+.app-shell .fw-status {
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.app-shell :is(
+  .fw-empty, .career-empty, .wx-stage-empty,
+  .as-audit-empty
+) {
+  background: var(--surface-soft);
+  border-radius: 13px;
+  border-color: var(--border);
+}
+
+.app-shell :is(
+  .wx-pipeline-column, .wx-integration,
+  .wx-diagnostic, .wx-agenda-day
+) {
+  background: var(--surface-soft);
+}
+
+.app-shell .wx-day {
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+
+.app-shell .wx-day[data-today="true"] {
+  border-color: var(--accent);
+}
+
+.app-shell .wx-calendar-event {
+  border-radius: 5px;
+}
+
+.app-shell .wx-email-list button {
+  border-radius: 10px;
+}
+
+.app-shell .wx-email-list button[data-selected="true"] {
+  background: var(--hover);
+}
+
+/* Career, resume management and job discovery */
+
+.app-shell .career-tabs {
+  padding: 6px;
+  gap: 5px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.app-shell .career-tabs button {
+  border-radius: 8px;
+  background: transparent;
+}
+
+.app-shell .career-tabs button[aria-pressed="true"] {
+  background: var(--panel);
+  color: var(--accent);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.app-shell :is(
+  .career-group, .career-review,
+  .career-metric, .career-document
+) {
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.app-shell .career-file-picker {
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.app-shell .career-document[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+.app-shell .discover-panel {
+  min-width: 0;
+}
+
+.app-shell :is(.discover-panel, .career-workspace)
+  :is(input, textarea, select) {
+  accent-color: var(--primary);
+}
+
+.app-shell .discover-panel
+  :is(.panel, .secondary-button) {
+  border-radius: 12px;
+}
+
+/* Settings, diagnostics and controls */
+
+.app-shell .as-navigation {
+  border-radius: 12px;
+}
+
+.app-shell .as-navigation button {
+  border-radius: 8px;
+}
+
+.app-shell .as-navigation button[data-active="true"] {
+  color: var(--accent);
+  background: var(--hover);
+}
+
+.app-shell :is(
+  .as-control-card, .as-provider,
+  .as-storage-metric, .as-audit-list article,
+  .as-theme-option, .as-control-confirm
+) {
+  border-radius: 12px;
+  border-color: var(--border);
+}
+
+.app-shell :is(
+  .as-control-card, .as-provider,
+  .as-storage-metric, .as-audit-list article
+) {
+  background: var(--surface-soft);
+}
+
+.app-shell .as-theme-option[data-selected="true"] {
+  border-color: var(--accent);
+}
+
+.app-shell .as-global-message {
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.app-shell .notice {
+  border-radius: 10px;
+  line-height: 1.6;
+}
+
+.app-shell .inference-panel .prompt-preview,
+.app-shell .inference-panel .model-response {
+  background: var(--surface-soft);
+  border-radius: 12px;
+}
+
+/* Responsive layout; retain existing chat scroll behavior */
+
+.app-shell.ac-shell[data-sidebar="collapsed"] .sidebar {
+  width: 66px;
+  padding-inline: 8px;
+}
+
+.app-shell[data-sidebar="collapsed"] .aegis-nav-group {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1100px) {
+  .app-shell .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-shell.ac-shell .sidebar {
+    width: 218px;
+  }
+}
+
+@media (max-width: 700px) {
+  .app-shell.ac-shell[data-sidebar="expanded"] .sidebar {
+    width: 62px;
+    padding: 15px 6px;
+  }
+
+  .app-shell.ac-shell[data-sidebar="collapsed"] .sidebar {
+    display: none;
+  }
+
+  .app-shell .brand {
+    padding: 0 5px 20px;
+  }
+
+  .app-shell .nav-item {
+    justify-content: center;
+    padding: 9px 5px;
+  }
+
+  .app-shell .aegis-nav-group {
+    margin-bottom: 12px;
+  }
+
+  .app-shell .workspace-content {
+    padding: 18px 12px;
+  }
+
+  .app-shell .topbar {
+    min-height: 53px;
+    padding: 8px 10px;
+  }
+
+  .app-shell .ac-topbar-wrap {
+    padding-left: 8px;
+  }
+
+  .app-shell .panel {
+    padding: 15px;
+  }
+
+  .app-shell .ac-overview-card {
+    padding: 20px;
+    min-height: 190px;
+  }
+
+  .app-shell .career-tabs {
+    flex-wrap: wrap;
+  }
+
+  .app-shell .ac-header {
+    padding: 12px;
+  }
+
+  .app-shell .ac-markdown {
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *,
+  .aegis-auth-screen * {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Reusable controls */
+
+.aegis-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  border-radius: 9px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 550;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.aegis-button-primary {
+  color: white;
+  background: var(--primary);
+  border-color: transparent;
+}
+
+.aegis-button-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.aegis-button-secondary:hover:not(:disabled),
+.aegis-button-icon:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+.aegis-button-icon {
+  width: 37px;
+  height: 37px;
+  min-height: 37px;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+/* Command palette */
+
+.aegis-command-trigger {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.aegis-command-trigger:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.aegis-command-trigger kbd {
+  border: 1px solid var(--border);
+  padding: 3px 5px;
+  border-radius: 5px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.aegis-command-dialog {
+  position: fixed;
+  top: min(15vh, 140px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(85dvh - 20px);
+  overflow: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 24px 90px #0005;
+}
+
+.aegis-command-dialog::backdrop {
+  background: #070a145c;
+  backdrop-filter: blur(4px);
+}
+
+.aegis-command-search {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.aegis-command-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.aegis-command-search input:focus-visible {
+  outline-offset: 0;
+}
+
+.aegis-command-caption {
+  padding: 14px 20px 7px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+
+.aegis-command-results {
+  padding: 0 10px 10px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.aegis-command-result {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 41px;
+  padding: 10px 13px;
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.aegis-command-result span {
+  flex: 1;
+}
+
+.aegis-command-result svg {
+  color: var(--muted);
+}
+
+.aegis-command-result[aria-selected="true"] {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+.aegis-command-result[aria-selected="true"] svg {
+  color: var(--accent);
+}
+
+.aegis-command-empty {
+  padding: 30px 15px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.aegis-command-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 13px 20px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}
+
+/* Accessible notifications */
+
+.aegis-notification {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  width: min(380px, calc(100vw - 32px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--success);
+  border-radius: 13px;
+  box-shadow: 0 15px 50px #0003;
+  animation: aegis-notification-enter .2s ease-out;
+}
+
+.aegis-notification[data-tone="error"] {
+  border-left-color: #ef4444;
+}
+
+.aegis-notification > svg {
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.aegis-notification[data-tone="error"] > svg {
+  color: #ef4444;
+}
+
+.aegis-notification > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.aegis-notification strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.aegis-notification p {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+@keyframes aegis-notification-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Shared loading skeletons */
+
+.aegis-skeleton-layout {
+  display: grid;
+  gap: 18px;
+}
+
+.aegis-skeleton-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.aegis-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.aegis-skeleton-line {
+  height: 13px;
+  border-radius: 6px;
+  background: var(--hover);
+  animation: aegis-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.aegis-skeleton-line + .aegis-skeleton-line {
+  margin-top: 13px;
+}
+
+.aegis-skeleton-title {
+  height: 28px;
+  width: min(340px, 80%);
+}
+
+.aegis-skeleton-short {
+  width: 55%;
+}
+
+.aegis-skeleton-content {
+  min-height: 180px;
+}
+
+@keyframes aegis-skeleton-pulse {
+  0%, 100% { opacity: .5; }
+  50% { opacity: 1; }
+}
+
+/* Dedicated workspace refinements */
+
+.app-shell[data-workspace="tasks"] .fw-records {
+  gap: 12px;
+}
+
+.app-shell[data-workspace="tasks"] .fw-record {
+  border-radius: 10px;
+}
+
+.app-shell[data-workspace="calendar"] .wx-day {
+  min-width: 0;
+}
+
+.app-shell[data-workspace="email"] .wx-email-list {
+  background: var(--sidebar);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.app-shell[data-workspace="research"] .fw-notes,
+.app-shell[data-workspace="memory"] .fw-notes {
+  line-height: 1.8;
+}
+
+.app-shell[data-workspace="coding"] .fw-notes {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 13px;
+}
+
+.app-shell[data-workspace="browser"] .fw-reference {
+  overflow-wrap: anywhere;
+}
+
+.app-shell[data-workspace="approvals"] .wx-decision-layout {
+  gap: 18px;
+}
+
+.app-shell[data-workspace="jobs"] .career-panel {
+  min-width: 0;
+}
+
+.app-shell[data-workspace="settings"] .as-content {
+  min-width: 0;
+}
+
+/* Responsive and reduced-motion support */
+
+@media (max-width: 1100px) {
+  .aegis-command-trigger kbd {
+    display: none;
+  }
+
+  .aegis-skeleton-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 800px) {
+  .aegis-command-trigger span {
+    display: none;
+  }
+
+  .aegis-command-trigger {
+    width: 36px;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .aegis-notification {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .aegis-skeleton-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aegis-notification,
+  .aegis-skeleton-line {
+    animation: none;
+  }
+}

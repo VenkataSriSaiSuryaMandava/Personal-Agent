@@ -8,6 +8,24 @@ interface SidebarProps {
   onNavigate: (page: Workspace) => void;
 }
 
+const groups: {
+  title: string;
+  ids: Workspace[];
+}[] = [
+  {
+    title: "WORKSPACE",
+    ids: ["overview", "chat", "tasks", "jobs"],
+  },
+  {
+    title: "PRODUCTIVITY",
+    ids: ["email", "calendar", "research", "coding", "browser"],
+  },
+  {
+    title: "SYSTEM",
+    ids: ["memory", "approvals", "settings"],
+  },
+];
+
 export default function Sidebar({
   active,
   onNavigate,
@@ -20,37 +38,40 @@ export default function Sidebar({
         </div>
         <div>
           <strong>Aegis</strong>
-          <small>PERSONAL AGENT</small>
+          <small>PERSONAL AI WORKSPACE</small>
         </div>
       </div>
 
       <nav aria-label="Main navigation">
-        <p className="nav-heading">WORKSPACE</p>
+        {groups.map(group => (
+          <div className="aegis-nav-group" key={group.title}>
+            <p className="nav-heading">{group.title}</p>
+            {group.ids.map(id => {
+              const item = navigation.find(entry => entry.id === id)!;
+              const Icon = item.icon;
 
-        {navigation.map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <button
-              key={item.id}
-              aria-label={item.label}
-              title={item.label}
-              onClick={() => onNavigate(item.id)}
-              aria-current={active === item.id ? "page" : undefined}
-              className={`nav-item ${
-                active === item.id ? "active" : ""
-              }`}
-            >
-              <Icon size={18} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-label={item.label}
+                  title={item.label}
+                  onClick={() => onNavigate(item.id)}
+                  aria-current={active === item.id ? "page" : undefined}
+                  className={`nav-item ${active === item.id ? "active" : ""}`}
+                >
+                  <Icon size={17} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div className="sidebar-footer">
-        <span className="status-dot" />
-        Development mode
+        <ShieldCheck size={15} />
+        Aegis workspace
       </div>
     </aside>
   );
