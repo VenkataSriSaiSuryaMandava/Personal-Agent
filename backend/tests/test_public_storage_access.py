@@ -61,7 +61,7 @@ def test_public_authorized_database_access(
         with connect(path) as c:
             assert c.execute(
                 "PRAGMA user_version"
-            ).fetchone()[0] == 8
+            ).fetchone()[0] == 9
 
         with pytest.raises(PermissionError):
             with connect(DATABASE_PATH):

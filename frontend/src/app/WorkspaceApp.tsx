@@ -348,6 +348,7 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
                 />
               </div>
 
+
               {active === "overview" && (
                 <>
                   <div className="page-heading">
@@ -373,8 +374,8 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
                     />
                     <StatusCard
                       title="Task engine"
-                      value="Manual"
-                      description="Tasks and deadlines"
+                      value="Local workflows"
+                      description="Registered operations and tasks"
                     />
                     <StatusCard
                       title="Integrations"
@@ -382,9 +383,9 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
                       description="External accounts not connected"
                     />
                     <StatusCard
-                      title="Execution"
-                      value="Off"
-                      description="Text responses only"
+                      title="External execution"
+                      value="Disabled"
+                      description="No external actions enabled"
                     />
                   </div>
 
@@ -428,6 +429,22 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
 
                         onNavigate={navigate}
                       />
+                      <section className="panel">
+                        <div className="panel-heading">
+                          <h2>Agent execution</h2>
+                        </div>
+                        <p className="muted">
+                          Local career operations are available.
+                          Automatic scheduling is not enabled.
+                        </p>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => navigateSettings("agents")}
+                        >
+                          Open agent diagnostics
+                        </button>
+                      </section>
                       <SystemStatus />
                       <Approvals
                         onOpen={() => navigate("approvals")}
@@ -472,6 +489,7 @@ function Dashboard({ publicMode }: { publicMode: boolean }) {
                   onAssistant={() => navigate("chat")}
                 />
               )}
+
 
               {active !== "chat" &&
                active !== "overview" &&

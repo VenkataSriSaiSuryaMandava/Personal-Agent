@@ -445,7 +445,7 @@ from pathlib import Path
 
 d = json.loads(Path(sys.argv[1]).read_text())
 
-assert d["schema_version"] == 8
+assert d["schema_version"] == 9
 assert d["integrity"] == "ok"
 assert d["local_only"] is False
 PY

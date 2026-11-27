@@ -401,7 +401,7 @@ def test_public_storage_metadata(environment):
     result = response.json()
 
     assert result["database"] == "sqlite"
-    assert result["schema_version"] == 8
+    assert result["schema_version"] == 9
     assert result["integrity"] == "ok"
     assert result["local_only"] is False
     assert result["encrypted_by_application"] is False
@@ -476,3 +476,118 @@ def test_guest_resume_rejects_body(environment):
         headers=headers,
         json={},
     ).status_code == 422
+
+
+def test_guest_workflow_isolation(environment):
+    from uuid import uuid4
+
+    client, gateway = environment
+
+    first = visitor(client, gateway)
+    second = visitor(client, gateway)
+
+    base = "/api/v1/workflows"
+
+    source = client.post(
+        "/api/v1/career/sources",
+        headers=first,
+        json={
+            "provider": "greenhouse",
+            "board": "guest-workflow-test",
+            "company": "Guest Workflow Company",
+        },
+    )
+
+    assert source.status_code == 200
+
+    payload = {
+        "workflow_type": "company_summary",
+        "target_id": source.json()["id"],
+        "request_key": str(uuid4()),
+    }
+
+    assert client.post(
+        base,
+        headers=second,
+        json=payload,
+    ).status_code == 404
+
+    created = client.post(
+        base,
+        headers=first,
+        json=payload,
+    )
+
+    assert created.status_code == 200
+
+    run = created.json()
+    url = base + "/" + run["id"]
+
+    assert client.get(
+        base, headers=second,
+    ).json()["records"] == []
+
+    for suffix in ("", "/events"):
+        assert client.get(
+            url + suffix,
+            headers=second,
+        ).status_code == 404
+
+    assert client.post(
+        url + "/execute",
+        headers=second,
+    ).status_code == 404
+
+    assert client.post(
+        url + "/cancel",
+        headers=second,
+        json={"expected_revision": run["revision"]},
+    ).status_code == 404
+
+    executed = client.post(
+        url + "/execute",
+        headers=first,
+    )
+
+    assert executed.status_code == 200
+    assert executed.json()["status"] == "completed"
+
+    assert executed.json()["steps"][0]["output"]["company"] == (
+        "Guest Workflow Company"
+    )
+
+    assert client.get(
+        base, headers=second,
+    ).json()["records"] == []
+
+
+def test_guest_workflow_capacity(environment):
+    from uuid import uuid4
+
+    client, gateway = environment
+    headers = visitor(client, gateway)
+
+    source = client.post(
+        "/api/v1/career/sources",
+        headers=headers,
+        json={
+            "provider": "greenhouse",
+            "board": "guest-capacity",
+            "company": "Guest Capacity Test",
+        },
+    )
+
+    assert source.status_code == 200
+
+    for expected in (200, 200, 429):
+        result = client.post(
+            "/api/v1/workflows",
+            headers=headers,
+            json={
+                "workflow_type": "company_summary",
+                "target_id": source.json()["id"],
+                "request_key": str(uuid4()),
+            },
+        )
+
+        assert result.status_code == expected

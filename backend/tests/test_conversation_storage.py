@@ -230,6 +230,10 @@ def test_migration_preserves_owner_and_settings(db):
         connection.execute(
             "DROP TABLE conversations"
         )
+        # Remove schema 9 tables from historical test fixture.
+        connection.execute("DROP TABLE workflow_events")
+        connection.execute("DROP TABLE workflow_steps")
+        connection.execute("DROP TABLE workflow_runs")
         connection.execute(
             "PRAGMA user_version = 3"
         )
@@ -250,7 +254,7 @@ def test_migration_preserves_owner_and_settings(db):
             "SELECT COUNT(*) FROM users"
         ).fetchone()[0]
 
-    assert version == 8
+    assert version == 9
     assert owner_count == 1
 
 

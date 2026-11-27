@@ -22,7 +22,7 @@ def test_career_schema(authenticated_environment):
     with connect(path) as c:
         assert c.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 8
+        ).fetchone()[0] == 9
 
         tables = {
             row[0]
@@ -54,6 +54,10 @@ def test_v6_migration_preserves_existing_data(
         for table in CAREER_TABLES:
             c.execute("DROP TABLE " + table)
 
+        # Remove schema 9 tables from historical test fixture.
+        c.execute("DROP TABLE workflow_events")
+        c.execute("DROP TABLE workflow_steps")
+        c.execute("DROP TABLE workflow_runs")
         c.execute("PRAGMA user_version = 6")
 
         before = [
@@ -74,7 +78,7 @@ def test_v6_migration_preserves_existing_data(
     with connect(path) as c:
         assert c.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 8
+        ).fetchone()[0] == 9
 
         assert [
             tuple(row)

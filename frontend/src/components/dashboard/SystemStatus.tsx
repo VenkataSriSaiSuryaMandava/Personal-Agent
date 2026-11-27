@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
+import { getStorage, type StorageResponse } from "@/lib/settings";
 import {
   getSystemStatus,
   type SystemStatusResponse,
@@ -15,6 +16,8 @@ export default function SystemStatus() {
     useState("Checking");
 
   const [checking, setChecking] = useState(false);
+  const [storage, setStorage] =
+    useState<StorageResponse | null>(null);
 
   async function refresh() {
     setChecking(true);
@@ -27,6 +30,12 @@ export default function SystemStatus() {
     } catch {
       setStatus(null);
       setConnection("Unavailable");
+    }
+
+    try {
+      setStorage(await getStorage());
+    } catch {
+      setStorage(null);
     } finally {
       setChecking(false);
     }
@@ -50,13 +59,13 @@ export default function SystemStatus() {
         : "Unknown",
     },
     {
-      name: "Local database",
-      status: status?.database
-        ? status.database.replaceAll("_", " ")
-        : "Unknown",
+      name: "Workspace database",
+      status: storage
+        ? `${storage.database} · schema ${storage.schema_version} · ${storage.integrity}`
+        : "Not verified",
     },
     {
-      name: "Execution engine",
+      name: "External execution",
       status: status
         ? status.execution_enabled
           ? "Enabled"

@@ -4,6 +4,7 @@ export const SETTINGS_SECTIONS = [
   "general",
   "ai",
   "integrations",
+  "agents",
   "security",
   "privacy",
   "storage",

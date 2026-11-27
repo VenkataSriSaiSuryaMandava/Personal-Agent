@@ -191,6 +191,10 @@ def test_schema_v7_migration(
         for table in TABLES:
             c.execute("DROP TABLE " + table)
 
+        # Remove schema 9 tables from historical test fixture.
+        c.execute("DROP TABLE workflow_events")
+        c.execute("DROP TABLE workflow_steps")
+        c.execute("DROP TABLE workflow_runs")
         c.execute("PRAGMA user_version = 7")
 
         existing_tables = [
@@ -216,7 +220,7 @@ def test_schema_v7_migration(
     with connect(path) as c:
         assert c.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 8
+        ).fetchone()[0] == 9
 
         for table, records in before.items():
             assert [
@@ -244,6 +248,10 @@ def test_migration_rollback(
         c.execute("DROP TABLE job_listings")
 
         # Retain job_sources to trigger a schema collision.
+        # Remove schema 9 tables from historical test fixture.
+        c.execute("DROP TABLE workflow_events")
+        c.execute("DROP TABLE workflow_steps")
+        c.execute("DROP TABLE workflow_runs")
         c.execute("PRAGMA user_version = 7")
 
     with pytest.raises(sqlite3.OperationalError):
