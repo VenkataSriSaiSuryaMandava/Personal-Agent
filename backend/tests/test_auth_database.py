@@ -98,6 +98,10 @@ def test_version_one_migration_preserves_data(database_path):
             VALUES (?, ?)
         """, ("migration-test", "preserved"))
 
+        # Remove schema 9 tables from historical test fixture.
+        connection.execute("DROP TABLE workflow_events")
+        connection.execute("DROP TABLE workflow_steps")
+        connection.execute("DROP TABLE workflow_runs")
         connection.execute("PRAGMA user_version = 1")
 
     initialize_database(database_path)

@@ -1,6 +1,7 @@
 "use client";
 
 import IntegrationPanel from "../workspaces/IntegrationPanel";
+import AgentWorkflows from "../dashboard/AgentWorkflows";
 import "../workspaces/WorkspaceExperience.css";
 
 import {
@@ -50,6 +51,7 @@ const SECTIONS = [
   { id: "general", title: "General", icon: SlidersHorizontal },
   { id: "ai", title: "AI & Models", icon: Brain },
   { id: "integrations", title: "Integrations", icon: Globe },
+  { id: "agents", title: "Agent execution", icon: Activity },
   { id: "security", title: "Security", icon: ShieldCheck },
   { id: "privacy", title: "Privacy", icon: Lock },
   { id: "storage", title: "Storage", icon: Database },
@@ -888,6 +890,10 @@ export default function SettingsWorkspace(
 
           {section === "integrations" && (
             <IntegrationPanel/>
+          )}
+
+          {section === "agents" && (
+            <AgentWorkflows guest={publicMode}/>
           )}
 
           {section === "security" && (

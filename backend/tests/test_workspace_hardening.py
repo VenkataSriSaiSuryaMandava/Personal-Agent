@@ -404,6 +404,10 @@ def test_v5_to_v6_preserves_records(
             "DROP TABLE workspace_audit_events"
         )
 
+        # Remove schema 9 tables from historical test fixture.
+        connection.execute("DROP TABLE workflow_events")
+        connection.execute("DROP TABLE workflow_steps")
+        connection.execute("DROP TABLE workflow_runs")
         connection.execute(
             "PRAGMA user_version = 5"
         )
@@ -423,7 +427,7 @@ def test_v5_to_v6_preserves_records(
     with connect(path) as connection:
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 8
+        ).fetchone()[0] == 9
 
         assert connection.execute(
             "PRAGMA integrity_check"

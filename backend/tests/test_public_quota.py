@@ -130,4 +130,4 @@ def test_original_schema_preserved(database):
     with connect(database) as c:
         assert c.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 8
+        ).fetchone()[0] == 9

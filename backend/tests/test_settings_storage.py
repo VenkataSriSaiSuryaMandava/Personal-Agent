@@ -38,7 +38,7 @@ def test_schema_version(settings_database):
 
         assert connection.execute(
             "PRAGMA user_version"
-        ).fetchone()[0] == 8
+        ).fetchone()[0] == 9
 
 
 def test_default_settings(settings_database):
@@ -324,6 +324,10 @@ def test_migration_from_version_two_preserves_owner(
             VALUES ('gemini', 100)
         """)
 
+        # Remove schema 9 tables from historical test fixture.
+        connection.execute("DROP TABLE workflow_events")
+        connection.execute("DROP TABLE workflow_steps")
+        connection.execute("DROP TABLE workflow_runs")
         connection.execute("PRAGMA user_version = 2")
 
     initialize_database(settings_database)
@@ -350,6 +354,10 @@ def test_migration_failure_rolls_back(settings_database):
     with connect(settings_database) as connection:
 
         connection.execute("DROP TABLE application_settings")
+        # Remove schema 9 tables from historical test fixture.
+        connection.execute("DROP TABLE workflow_events")
+        connection.execute("DROP TABLE workflow_steps")
+        connection.execute("DROP TABLE workflow_runs")
         connection.execute("PRAGMA user_version = 2")
 
     with pytest.raises(sqlite3.OperationalError):

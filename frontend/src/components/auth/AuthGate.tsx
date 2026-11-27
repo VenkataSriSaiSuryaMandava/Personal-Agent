@@ -20,6 +20,7 @@ import {
 import "./auth-screen.css";
 import {
   acceptSession,
+  hasSessionBinding,
   clearWorkspaceSession,
   notifySessionChange,
   workspaceFetch,
@@ -88,6 +89,7 @@ export default function AuthGate({
     void check();
 
     function expired() {
+      active = false;
       clearWorkspaceSession();
       rememberActiveConversation(null);
       setState("locked");
@@ -143,14 +145,13 @@ export default function AuthGate({
         response.ok &&
         result.authenticated === true &&
         result.role === "owner" &&
-        acceptSession(response)
+        hasSessionBinding(response)
       ) {
-        notifySessionChange();
-          rememberActiveConversation(null);
+        clearWorkspaceSession();
+        rememberActiveConversation(null);
         writeWorkspaceLocation("overview", "general", true);
-        setState("authenticated");
-        setGuest(false);
-        setUsername("");
+        notifySessionChange();
+        window.location.reload();
       } else {
         setError(
           response.status === 429
@@ -188,13 +189,13 @@ export default function AuthGate({
         response.ok &&
         result.authenticated === true &&
         result.role === "guest" &&
-        acceptSession(response)
+        hasSessionBinding(response)
       ) {
-        notifySessionChange();
-        setGuest(true);
+        clearWorkspaceSession();
         rememberActiveConversation(null);
         writeWorkspaceLocation("overview", "general", true);
-        setState("authenticated");
+        notifySessionChange();
+        window.location.reload();
       } else {
         setError(
           response.status === 429
@@ -227,9 +228,9 @@ export default function AuthGate({
       }
 
       clearWorkspaceSession();
-      notifySessionChange();
       rememberActiveConversation(null);
-      setState("locked");
+      notifySessionChange();
+      window.location.reload();
     } catch {
       setError("Logout failed. Please retry.");
     } finally {

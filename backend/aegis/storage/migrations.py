@@ -10,7 +10,7 @@ from aegis.storage.database import (
 from aegis.storage.settings import ApplicationSettings
 
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 
 def initialize_database(
@@ -605,3 +605,152 @@ def initialize_database(
             """)
 
             connection.execute("PRAGMA user_version = 8")
+
+            version = 8
+
+        if version == 8:
+
+            connection.execute("""
+                CREATE TABLE workflow_runs (
+                    id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    workflow_type TEXT NOT NULL
+                        CHECK (length(workflow_type) BETWEEN 1 AND 100),
+                    definition_version INTEGER NOT NULL
+                        CHECK (definition_version >= 1),
+                    request_key TEXT NOT NULL
+                        CHECK (length(request_key) = 36),
+                    target_id TEXT NOT NULL
+                        CHECK (length(target_id) = 36),
+                    status TEXT NOT NULL CHECK (
+                        status IN (
+                            'queued', 'running',
+                            'waiting_approval', 'executing',
+                            'completed', 'failed',
+                            'cancelled', 'uncertain'
+                        )
+                    ),
+                    revision INTEGER NOT NULL DEFAULT 1
+                        CHECK (
+                            revision BETWEEN 1
+                            AND 9007199254740991
+                        ),
+                    cancellation_requested INTEGER
+                        NOT NULL DEFAULT 0
+                        CHECK (cancellation_requested IN (0, 1)),
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE,
+                    UNIQUE (user_id, id),
+                    UNIQUE (user_id, workflow_type, request_key)
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_workflow_runs_owner
+                ON workflow_runs(
+                    user_id, status, updated_at DESC
+                )
+            """)
+
+            connection.execute("""
+                CREATE TABLE workflow_steps (
+                    id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    run_id TEXT NOT NULL,
+                    step_key TEXT NOT NULL
+                        CHECK (length(step_key) BETWEEN 1 AND 100),
+                    capability TEXT NOT NULL
+                        CHECK (length(capability) BETWEEN 1 AND 100),
+                    capability_version INTEGER NOT NULL
+                        CHECK (capability_version >= 1),
+                    status TEXT NOT NULL CHECK (
+                        status IN (
+                            'queued', 'running',
+                            'waiting_approval', 'executing',
+                            'completed', 'failed',
+                            'cancelled', 'uncertain'
+                        )
+                    ),
+                    input_payload TEXT NOT NULL
+                        CHECK (
+                            json_valid(input_payload)
+                            AND length(CAST(input_payload AS BLOB))
+                                <= 32768
+                        ),
+                    output_payload TEXT
+                        CHECK (
+                            output_payload IS NULL
+                            OR (
+                                json_valid(output_payload)
+                                AND length(
+                                    CAST(output_payload AS BLOB)
+                                ) <= 32768
+                            )
+                        ),
+                    attempt_count INTEGER NOT NULL DEFAULT 0
+                        CHECK (attempt_count BETWEEN 0 AND 3),
+                    available_at INTEGER NOT NULL,
+                    lease_token TEXT,
+                    lease_expires_at INTEGER,
+                    error_code TEXT
+                        CHECK (
+                            error_code IS NULL
+                            OR length(error_code) BETWEEN 1 AND 100
+                        ),
+                    revision INTEGER NOT NULL DEFAULT 1
+                        CHECK (
+                            revision BETWEEN 1
+                            AND 9007199254740991
+                        ),
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    CHECK (
+                        (lease_token IS NULL
+                            AND lease_expires_at IS NULL)
+                        OR
+                        (lease_token IS NOT NULL
+                            AND lease_expires_at IS NOT NULL)
+                    ),
+                    FOREIGN KEY (user_id, run_id)
+                        REFERENCES workflow_runs(user_id, id)
+                        ON DELETE CASCADE,
+                    UNIQUE (user_id, run_id, step_key),
+                    UNIQUE (user_id, run_id, id)
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_workflow_steps_claim
+                ON workflow_steps(
+                    user_id, status,
+                    available_at, lease_expires_at
+                )
+            """)
+
+            connection.execute("""
+                CREATE TABLE workflow_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    run_id TEXT NOT NULL,
+                    step_id TEXT,
+                    event_type TEXT NOT NULL
+                        CHECK (length(event_type) BETWEEN 1 AND 100),
+                    created_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id, run_id)
+                        REFERENCES workflow_runs(user_id, id)
+                        ON DELETE CASCADE,
+                    FOREIGN KEY (user_id, run_id, step_id)
+                        REFERENCES workflow_steps(user_id, run_id, id)
+                        ON DELETE CASCADE
+                )
+            """)
+
+            connection.execute("""
+                CREATE INDEX idx_workflow_events_run
+                ON workflow_events(user_id, run_id, id)
+            """)
+
+            connection.execute("PRAGMA user_version = 9")

@@ -1,0 +1,147 @@
+.aegis-workflows {
+  margin-block: 20px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid rgba(128, 128, 128, 0.24);
+  border-radius: 16px;
+}
+
+.aegis-workflows h2,
+.aegis-workflows h3,
+.aw-header,
+.aw-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aw-header {
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.aw-notice {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin-block: 16px;
+}
+
+.aw-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+}
+
+.aw-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.aw-form select {
+  width: 100%;
+  min-width: 0;
+  color: inherit;
+  background: transparent;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.aw-layout {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(0, 1.6fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.aw-list,
+.aw-detail {
+  min-width: 0;
+}
+
+.aw-run {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  margin-block: 8px;
+  padding: 12px;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.22);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.aw-run[aria-pressed="true"] {
+  border-color: currentColor;
+}
+
+.aw-run span,
+.aw-events span {
+  text-transform: capitalize;
+}
+
+.aw-run small,
+.aw-events small {
+  opacity: 0.7;
+}
+
+.aw-actions {
+  flex-wrap: wrap;
+  margin-block: 12px;
+}
+
+.aw-step {
+  padding-block: 12px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  overflow-wrap: anywhere;
+}
+
+.aw-step pre {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+}
+
+.aw-events {
+  padding-left: 20px;
+}
+
+.aw-events li {
+  margin-block: 10px;
+}
+
+.aw-events small {
+  display: block;
+}
+
+.aegis-workflows button:focus-visible,
+.aegis-workflows select:focus-visible,
+.aegis-workflows summary:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .aw-form,
+  .aw-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aegis-workflows * {
+    transition: none;
+    animation: none;
+  }
+}

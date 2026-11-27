@@ -243,6 +243,10 @@ def test_migration_failure_rolls_back(
 
         # Keep resume_versions to simulate a schema
         # collision midway through migration.
+        # Remove schema 9 tables from historical test fixture.
+        c.execute("DROP TABLE workflow_events")
+        c.execute("DROP TABLE workflow_steps")
+        c.execute("DROP TABLE workflow_runs")
         c.execute("PRAGMA user_version = 6")
 
     with pytest.raises(sqlite3.OperationalError):
